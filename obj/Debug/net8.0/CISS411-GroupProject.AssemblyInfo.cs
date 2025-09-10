@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("CISS411-GroupProject")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b1e3e0a70893d44a5ea8d8404735fe072cad16ac")]
 [assembly: System.Reflection.AssemblyProductAttribute("CISS411-GroupProject")]
 [assembly: System.Reflection.AssemblyTitleAttribute("CISS411-GroupProject")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
