@@ -1,0 +1,33 @@
+﻿@model IEnumerable<CISS411_GroupProject.Models.User>
+
+@{
+    ViewData["Title"] = "Registered Visitors";
+}
+
+<h2>Registered Visitors</h2>
+
+<table class="table table-striped table-bordered">
+    <thead class="thead-dark">
+        <tr>
+            <th>First Name</th>
+            <th>Last Name</th>
+            <th>Email</th>
+            <th>Phone Number</th>
+            <th>Status</th>
+            <th>Registered At</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var visitor in Model)
+        {
+            <tr>
+                <td>@visitor.FirstName</td>
+                <td>@visitor.LastName</td>
+                <td>@visitor.Email</td>
+                <td>@visitor.PhoneNumber</td>
+                <td>@visitor.Status</td>
+                <td>@visitor.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+            </tr>
+        }
+    </tbody>
+</table>
