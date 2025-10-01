@@ -1,4 +1,4 @@
-using CISS411_GroupProject.Data;
+﻿using CISS411_GroupProject.Data;
 using Microsoft.EntityFrameworkCore;
 using System;
 
@@ -12,6 +12,14 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
+
+// Run DbInitializer, seeds test data
+using (var scope = app.Services.CreateScope())
+{
+	var services = scope.ServiceProvider;
+	var context = services.GetRequiredService<AppDbContext>();
+	DbInitializer.Initialize(context);
+}
 
 if (!app.Environment.IsDevelopment())
 {
