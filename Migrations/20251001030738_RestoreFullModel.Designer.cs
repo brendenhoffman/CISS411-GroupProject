@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CISS411_GroupProject.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250930051141_AddUsersTable")]
-    partial class AddUsersTable
+    [Migration("20251001030738_RestoreFullModel")]
+    partial class RestoreFullModel
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
