@@ -45,5 +45,45 @@
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
+    <!-- Hidden trigger for modal -->
+    <button type="button" class="btn btn-primary d-none" id="notifyBtn" data-bs-toggle="modal" data-bs-target="#newUsersModal">
+        Show New Users
+    </button>
+
+    <!-- Modal -->
+    <div class="modal fade" id="newUsersModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Newly Registered Users</h5>
+                </div>
+                <div class="modal-body" id="newUsersList">
+                    <!-- Filled dynamically -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            fetch('/Notifications/NewRegistrations')
+                .then(response => response.json())
+                .then(users => {
+                    if (users.length > 0) {
+                        let listHtml = "<ul>";
+                        users.forEach(u => {
+                            listHtml += `<li>${u.firstName}, ${u.lastName}- ${u.email}</li>`;
+                        });
+                        listHtml += "</ul>";
+                        document.getElementById("newUsersList").innerHTML = listHtml;
+
+                        // Trigger modal
+                        document.getElementById("notifyBtn").click();
+                    }
+                });
+        });
+    </script>
 </body>
 </html>
