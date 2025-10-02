@@ -1,0 +1,55 @@
+﻿@*
+Course #: CISS 411
+Course Name: Software Architecture with ASP.NET with MVC
+Group 2: Ashley Steward, Linda Daniel,Allan Lopesandovall, Brenden Hoffman, 
+Jason Farr, Jerome Whitaker, Jason Farr and Justin Kim.
+Date Completed: 10-2-2025
+Story Assigne: Ashley Steward 
+Story: User Story 2
+*@
+@model CISS411_GroupProject.Models.Order
+
+@{
+    ViewData["Title"] = "Order Details";
+}
+
+<h2>Order Summary</h2>
+
+<div>
+    <strong>Order ID:</strong> @Model.OrderID <br />
+    <strong>Customer:</strong> @Model.Customer.FirstName @Model.Customer.LastName <br />
+    <strong>Occasion:</strong> @Model.Occasion <br />
+    <strong>Delivery Date:</strong> @Model.DeliveryDate.ToShortDateString() <br />
+    <strong>Budget:</strong> $@Model.Budget <br />
+    <strong>Status:</strong> @Model.Status
+</div>
+
+<h4>Items</h4>
+@if (Model.OrderItems != null && Model.OrderItems.Any())
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Item Name</th>
+                <th>Quantity</th>
+                <th>Design Approved</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.OrderItems)
+            {
+                <tr>
+                    <td>@item.ItemName</td>
+                    <td>@item.Quantity</td>
+                    <td>@(item.DesignApproved ? "Yes" : "No")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p>No items found for this order.</p>
+}
+
+<a asp-action="List" class="btn btn-secondary">Back to Orders</a>

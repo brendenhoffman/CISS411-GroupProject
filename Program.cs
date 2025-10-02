@@ -1,4 +1,5 @@
-﻿using CISS411_GroupProject.Data;
+﻿
+using CISS411_GroupProject.Data;
 using Microsoft.EntityFrameworkCore;
 using System;
 
@@ -36,6 +37,6 @@ app.UseAuthorization();
 // Default route pointing to registration page for testing
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Users}/{action=Register}/{id?}");
+    pattern: "{controller=Order}/{action=Create}/{id?}");
 
 app.Run();
