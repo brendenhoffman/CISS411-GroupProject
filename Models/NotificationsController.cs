@@ -1,11 +1,13 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using CISS411_GroupProject.Data;
 using CISS411_GroupProject.Models;
-using CISS411_GroupProject.Data;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Linq;
 
 namespace CISS411_GroupProject.Models
 {
+    [Authorize(Roles = "Admin")]
     public class NotificationsController : Controller
     {
         private readonly AppDbContext _context;
@@ -20,7 +22,7 @@ namespace CISS411_GroupProject.Models
         {
             {
                 // Get users registered in last 24 hours
-                var newUsers = _context.Users
+                var newUsers = _context.AppUsers
                     .Where(u => u.CreatedAt >= DateTime.Now.AddDays(-1) && u.Role =="Visitor" && u.Status == "Pending Confirmation")
                     .Select(u => new { u.FirstName, u.LastName, u.Email })
                     .ToList();

@@ -4,6 +4,9 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - CISS411_GroupProject</title>
+    @using Microsoft.AspNetCore.Identity
+    @inject SignInManager<IdentityUser> SignInManager
+    @inject UserManager<IdentityUser> UserManager
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/CISS411_GroupProject.styles.css" asp-append-version="true" />
@@ -18,13 +21,37 @@
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
+                    <ul class="navbar-nav ms-auto">
+                        @if (SignInManager.IsSignedIn(User))
+                        {
+                            <li class="nav-item">
+                                <span class="nav-link">Hello @User.Identity!.Name</span>
+                            </li>
+
+                            @* Example admin/employee-only link *@
+                            @if (User.IsInRole("Admin") || User.IsInRole("Employee"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-controller="Users" asp-action="List">Visitors</a>
+                                </li>
+                            }
+
+                            <li class="nav-item">
+                                <form asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="~/" method="post" class="d-inline">
+                                    <button type="submit" class="btn btn-link nav-link p-0">Logout</button>
+                                </form>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Login">Login</a>
+                            </li>
+                            <li class="nav-item">
+                                <!-- Your custom register page -->
+                                <a class="nav-link text-dark" asp-controller="Users" asp-action="Register">Register</a>
+                            </li>
+                        }
                     </ul>
                 </div>
             </div>
@@ -67,22 +94,19 @@
         </div>
     </div>
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
+        document.addEventListener("DOMContentLoaded", function () {
             fetch('/Notifications/NewRegistrations')
-                .then(response => response.json())
+                .then(r => (r.ok ? r.json() : []))
                 .then(users => {
                     if (users.length > 0) {
                         let listHtml = "<ul>";
-                        users.forEach(u => {
-                            listHtml += `<li>${u.firstName}, ${u.lastName}- ${u.email}</li>`;
-                        });
+                        users.forEach(u => listHtml += `<li>${u.firstName}, ${u.lastName} - ${u.email}</li>`);
                         listHtml += "</ul>";
                         document.getElementById("newUsersList").innerHTML = listHtml;
-
-                        // Trigger modal
                         document.getElementById("notifyBtn").click();
                     }
-                });
+                })
+                .catch(() => { /* ignore errors (e.g., 401) */ });
         });
     </script>
 </body>

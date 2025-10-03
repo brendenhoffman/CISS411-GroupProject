@@ -1,14 +1,16 @@
-﻿using CISS411_GroupProject.Models;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using CISS411_GroupProject.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace CISS411_GroupProject.Data
 {
-    public class AppDbContext : DbContext
+    public class AppDbContext : IdentityDbContext<IdentityUser, IdentityRole, string>
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
-        public DbSet<User> Users => Set<User>();
+        public DbSet<User> AppUsers => Set<User>();
         public DbSet<Order> Orders => Set<Order>();
         public DbSet<OrderItem> OrderItems => Set<OrderItem>();
         public DbSet<Design> Designs => Set<Design>();
@@ -18,6 +20,7 @@ namespace CISS411_GroupProject.Data
 
         protected override void OnModelCreating(ModelBuilder b)
         {
+            base.OnModelCreating(b);
             // USERS
             b.Entity<User>(e =>
             {
@@ -32,6 +35,11 @@ namespace CISS411_GroupProject.Data
                 e.Property(x => x.Status).IsRequired().HasMaxLength(30).HasDefaultValue("Pending Confirmation");
                 e.Property(x => x.CreatedAt).HasDefaultValueSql("GETDATE()");
                 e.Property(x => x.UpdatedAt).IsRequired(false);
+                e.Property(x => x.IdentityUserId).IsRequired().HasMaxLength(450);
+                e.HasOne(x => x.IdentityUser)
+                 .WithMany()
+                 .HasForeignKey(x => x.IdentityUserId)
+                 .OnDelete(DeleteBehavior.Restrict);
 
                 // Check constraints for Role/Status values (you can relax these if you want to allow more later)
                 e.ToTable(tb =>

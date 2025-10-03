@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Identity;
 
 namespace CISS411_GroupProject.Models
 {
@@ -31,6 +32,10 @@ namespace CISS411_GroupProject.Models
 
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
+
+        //Identity
+        public string IdentityUserId { get; set; } = null!;
+        public IdentityUser? IdentityUser { get; set; }
 
         // Navs — keep them initialized to avoid null refs in views
         public ICollection<Order> Orders { get; set; } = new List<Order>();                    // as Customer
