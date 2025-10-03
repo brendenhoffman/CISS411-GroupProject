@@ -1,11 +1,10 @@
 ﻿using CISS411_GroupProject.Data;
-using CISS411_GroupProject.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Linq;
 
-namespace CISS411_GroupProject.Models
+namespace CISS411_GroupProject.Controllers
 {
     [Authorize(Roles = "Admin")]
     public class NotificationsController : Controller

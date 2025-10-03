@@ -78,7 +78,7 @@ namespace CISS411_GroupProject.Controllers
                 Email = vm.Email,
                 PhoneNumber = vm.PhoneNumber,
                 Role = "Visitor",
-                Status = "Active",
+                Status = "Pending Confirmation",
                 IdentityUserId = iUser.Id,
                 CreatedAt = DateTime.Now
             };

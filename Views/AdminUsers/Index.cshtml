@@ -1,0 +1,54 @@
+﻿@model IEnumerable<CISS411_GroupProject.ViewModels.UserRoleItem>
+@{
+    ViewData["Title"] = "Manage User Roles";
+    var roles = (IEnumerable<string>)ViewBag.AllRoles;
+}
+
+<h2>Manage User Roles</h2>
+
+@if (TempData["Message"] is string ok)
+{
+    <div class="alert alert-success">@ok</div>
+}
+@if (TempData["Error"] is string err)
+{
+    <div class="alert alert-danger">@err</div>
+}
+
+<table class="table table-striped align-middle">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Current Role</th>
+            <th style="width:320px;">Assign New Role</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var u in Model)
+        {
+            <tr>
+                <td>@u.FullName</td>
+                <td>@u.Email</td>
+                <td><span class="badge bg-secondary">@u.CurrentRole</span></td>
+                <td>
+                    <form asp-action="SetRole" method="post" class="row g-2">
+                        <input type="hidden" name="identityUserId" value="@u.IdentityUserId" />
+                        <input type="hidden" name="appUserId" value="@u.AppUserId" />
+                        <div class="col-auto">
+                            <select name="newRole" class="form-select">
+                                @foreach (var r in roles)
+                                {
+                                    <option value="@r" selected="@(string.Equals(u.CurrentRole, r, System.StringComparison.OrdinalIgnoreCase))">@r</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-auto">
+                            <button type="submit" class="btn btn-primary">Assign</button>
+                        </div>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
