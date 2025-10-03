@@ -43,39 +43,34 @@ public class OrderController : Controller
     // To post view contents
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(Order order, List<OrderItem> items)
+    public async Task<IActionResult> Create(OrderFormViewModel model)
     {
         if (ModelState.IsValid)
         {
-            // To allow users access using their log-in.
-            var userId = GetLoggedInUserId(); 
-            order.CustomerID = userId;
-            order.Status = "Pending";
-            order.CreatedAt = DateTime.Now;
+            var userId = GetLoggedInUserId();
+            model.Order.CustomerID = userId;
+            model.Order.Status = "Pending";
+            model.Order.CreatedAt = DateTime.Now;
 
-            _context.Orders.Add(order);
+            _context.Orders.Add(model.Order);
             await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Details), new { id = order.OrderID });
 
-
-            // To save items selected
-            foreach (var item in items)
+            foreach (var item in model.Items)
             {
-                item.OrderID = order.OrderID;
-                _context.OrderItems.Add(item);
+                if (!string.IsNullOrWhiteSpace(item.ItemName) && item.Quantity > 0)
+                {
+                    item.OrderID = model.Order.OrderID;
+                    _context.OrderItems.Add(item);
+                }
             }
             await _context.SaveChangesAsync();
 
-            return RedirectToAction(nameof(Details), new { id = order.OrderID });
+            TempData["SuccessMessage"] = "Your order has been placed successfully!";
+
+            return RedirectToAction(nameof(Details), new { id = model.Order.OrderID });
         }
 
-        // To return a ViewModel
-        var viewModel = new OrderFormViewModel
-        {
-            Order = order,
-            Items = items.Any() ? items : new List<OrderItem> { new OrderItem() }
-        };
-        return View(viewModel);
+        return View(model);
     }
 
     // To get order details 
@@ -115,16 +110,18 @@ public class OrderController : Controller
     public async Task<IActionResult> UpdateStatus(int id, string status)
     {
         var order = await _context.Orders.FindAsync(id);
+
         if (order == null)
         {
             return NotFound();
+
         }
 
         order.Status = status;
         order.UpdatedAt = DateTime.Now;
         _context.Update(order);
         await _context.SaveChangesAsync();
-
+        TempData["SuccessMessage"] = $"Order status updated to {status}.";
         return RedirectToAction(nameof(Details), new { id });
     }
 
