@@ -1,0 +1,72 @@
+﻿@*
+Course #: CISS 411
+Course Name: Software Architecture with ASP.NET with MVC
+
+Group 2: Ashley Steward, Linda Daniel,Allan Lopesandovall, Brenden Hoffman, 
+Jason Farr, Jerome Whitaker, Jason Farr and Justin Kim.
+
+Date Completed: 10-2-2025
+Story Assigne: Ashley Steward 
+Story: User Story 2
+*@
+
+@model IEnumerable<CISS411_GroupProject.Models.Order>
+
+{
+    ViewData["Title"] = "All Orders";
+}
+
+<h2>All Orders</h2>
+
+<form method="get" asp-action="List">
+    <select name="status" class="form-control" onchange="this.form.submit()">
+        <option value="">-- Filter by Status --</option>
+        <option>Pending</option>
+        <option>Awaiting Customer Approval</option>
+        <option>In Process</option>
+        <option>Ready</option>
+        <option>Picked Up</option>
+    </select>
+</form>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Order ID</th>
+            <th>Customer</th>
+            <th>Occasion</th>
+            <th>Delivery Date</th>
+            <th>Budget</th>
+            <th>Status</th>
+            <th>Update</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var order in Model)
+        {
+            <tr>
+                <td>@order.OrderID</td>
+                <td>@order.Customer.FirstName @order.Customer.LastName</td>
+                <td>@order.Occasion</td>
+                <td>@order.DeliveryDate.ToShortDateString()</td>
+                <td>$@order.Budget</td>
+                <td>@order.Status</td>
+                <td>
+                    <form asp-action="UpdateStatus" method="post">
+                        <input type="hidden" name="id" value="@order.OrderID" />
+                        <select name="status" class="form-control">
+                            <option>Pending</option>
+                            <option>Awaiting Customer Approval</option>
+                            <option>In Process</option>
+                            <option>Ready</option>
+                            <option>Picked Up</option>
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-success">Update</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+}

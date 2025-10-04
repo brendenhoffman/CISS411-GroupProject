@@ -1,0 +1,57 @@
+﻿@*
+Course #: CISS 411
+Course Name: Software Architecture with ASP.NET with MVC
+
+Group 2: Ashley Steward, Linda Daniel,Allan Lopesandovall, Brenden Hoffman, 
+Jason Farr, Jerome Whitaker, Jason Farr and Justin Kim.
+
+Date Completed: 10-2-2025
+Story Assigne: Ashley Steward 
+Story: User Story 2
+*@
+@model CISS411_GroupProject.Models.Order
+
+@{
+    ViewData["Title"] = "Order Details";
+}
+
+<h2>Order Details</h2>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["SuccessMessage"]
+    </div>
+}
+
+<div class="card p-3 mb-3">
+    <h4>Order Info</h4>
+    <p><strong>Occasion:</strong> @Model.Occasion</p>
+    <p><strong>Delivery Date:</strong> @Model.DeliveryDate.ToShortDateString()</p>
+    <p><strong>Budget:</strong> $@Model.Budget</p>
+    <p><strong>Status:</strong> @Model.Status</p>
+    <p><strong>Customer:</strong> @Model.Customer.FirstName @Model.Customer.LastName</p>
+</div>
+
+<h4>Order Items</h4>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Item Name</th>
+            <th>Quantity</th>
+            <th>Approved</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.OrderItems)
+        {
+            <tr>
+                <td>@item.ItemName</td>
+                <td>@item.Quantity</td>
+                <td>@(item.DesignApproved ? "Yes" : "No")</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<a asp-action="List" class="btn btn-secondary">Back to Orders</a>

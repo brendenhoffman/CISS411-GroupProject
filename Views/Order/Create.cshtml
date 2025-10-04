@@ -1,0 +1,71 @@
+﻿@model CISS411_GroupProject.Models.ViewModels.OrderFormViewModel
+
+@*
+    Course #: CISS 411
+Course Name: Software Architecture with ASP.NET with MVC
+Group 2: Ashley Steward, Linda Daniel,Allan Lopesandovall, Brenden Hoffman, 
+Jason Farr, Jerome Whitaker, Jason Farr and Justin Kim.
+Date Completed: 10-2-2025
+Story Assigne: Ashley Steward 
+Story: User Story 2
+*@
+@{
+
+    ViewData["Title"] = "Place Order";
+}
+
+<h2>Place a Custom Order</h2>
+
+<form asp-action="Create" method="post">
+    @Html.AntiForgeryToken()
+    <div class="form-group">
+        <label asp-for="Order.Occasion"></label>
+        <input asp-for="Order.Occasion" class="form-control" />
+        <span asp-validation-for="Order.Occasion" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Order.DeliveryDate"></label>
+        <input asp-for="Order.DeliveryDate" type="date" class="form-control" />
+        <span asp-validation-for="Order.DeliveryDate" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Order.Budget"></label>
+        <input asp-for="Order.Budget" type="number" step="0.01" class="form-control" />
+        <span asp-validation-for="Order.Budget" class="text-danger"></span>
+    </div>
+
+    <h4>Order Items</h4>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Item Name</th>
+                <th>Quantity</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (int i = 0; i < Model.Items.Count; i++)
+            {
+                <tr>
+                    <td>
+                        <input asp-for="Items[@i].ItemName" class="form-control" />
+                        <span asp-validation-for="Items[@i].ItemName" class="text-danger"></span>
+                    </td>
+                    <td>
+                        <input asp-for="Items[@i].Quantity" type="number" class="form-control" />
+                        <span asp-validation-for="Items[@i].Quantity" class="text-danger"></span>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <button type="submit" class="btn btn-primary">Submit Order</button>
+</form>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
