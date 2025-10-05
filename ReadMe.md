@@ -1,7 +1,7 @@
-﻿#Build
+﻿# Build
 Run Update-Database
 
-#Pages and Roles
+# Pages and Roles
 | **Page / Route**                                           | **Controller / View**                      | **Purpose**                                                                | **Who Can Access**                                      |
 | ---------------------------------------------------------- | ------------------------------------------ | -------------------------------------------------------------------------- | ------------------------------------------------------- |
 | `/` → `/Home/Index`                                        | `HomeController.Index`                     | Landing page with basic welcome text and role-aware buttons.               | Everyone                                                |
