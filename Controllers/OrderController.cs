@@ -1,12 +1,13 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using CISS411_GroupProject.Data;
+﻿using CISS411_GroupProject.Data;
 using CISS411_GroupProject.Models;
 using CISS411_GroupProject.Models.ViewModels;
-using System.Linq;
-using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 /*Course #: CISS 411
 Course Name: Software Architecture with ASP.NET with MVC
 Group 2: Ashley Steward, Linda Daniel,Allan Lopesandovall,
@@ -29,6 +30,7 @@ public class OrderController : Controller
     // To request the view contents
     public IActionResult Create()
     {
+		/*
         var model = new OrderFormViewModel
         {
             Order = new Order()
@@ -38,13 +40,37 @@ public class OrderController : Controller
             Items = new List<OrderItem> { new OrderItem() }
         };
         return View(model);
-    }
+        */
+		var availableItems = _context.OrderItems
+		.Select(oi => oi.ItemName)
+		.Distinct()
+		.OrderBy(name => name)
+		.Select(name => new SelectListItem
+		{
+			Value = name,
+			Text = name
+		})
+		.ToList();
+
+		var model = new OrderFormViewModel
+		{
+			Order = new Order
+			{
+				DeliveryDate = DateTime.Today.AddDays(1)
+			},
+			Items = new List<OrderItem> { new OrderItem() },
+			AvailableItems = availableItems
+		};
+
+		return View(model);
+	}
 
     // To post view contents
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(OrderFormViewModel model)
     {
+        
         if (ModelState.IsValid)
         {
             var userId = GetLoggedInUserId();
@@ -70,15 +96,27 @@ public class OrderController : Controller
             return RedirectToAction(nameof(Details), new { id = model.Order.OrderID });
         }
 
-        return View(model);
-    }
+        // Repopulate dropdown if validation fails
+        model.AvailableItems = _context.OrderItems
+            .Select(oi => oi.ItemName)
+            .Distinct()
+            .OrderBy(name => name)
+            .Select(name => new SelectListItem
+            {
+                Value = name,
+                Text = name
+            })
+                .ToList();
+
+            return View(model);
+        }
 
     // To get order details 
     public async Task<IActionResult> Details(int id)
     {
         var order = await _context.Orders
-            .Include(o => o.OrderItems)
-            .Include(o => o.Customer)
+			.Include(o => o.Customer)
+			.Include(o => o.OrderItems)
             .FirstOrDefaultAsync(o => o.OrderID == id);
 
         if (order == null)

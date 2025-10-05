@@ -1,4 +1,5 @@
 ﻿using CISS411_GroupProject.Models;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -17,12 +18,12 @@ namespace CISS411_GroupProject.Models.ViewModels
 {
     public class OrderFormViewModel
     {
-        public Order Order { get; set; } = new Order();
+        public Order Order { get; set; }
 
         [Required]
-        public List<OrderItem> Items { get; set; } = new List<OrderItem>
-        {
-            new OrderItem()
-        };
-    }
+        public List<OrderItem> Items { get; set; } = new List<OrderItem>();
+
+		// For dropdown
+	public List<SelectListItem> AvailableItems { get; set; } = new List<SelectListItem>();
+	}
 }
