@@ -1,0 +1,27 @@
+﻿@{
+    ViewData["Title"] = "Home";
+}
+
+<div class="text-center mt-5">
+    <h1 class="display-4">Welcome to Smith Sweets</h1>
+    <p class="lead">Handcrafted desserts, managed with love by Grandma Smith and her team!</p>
+    <hr class="my-4" />
+
+    @if (User.Identity?.IsAuthenticated ?? false)
+    {
+        <p class="mt-3">You’re logged in as <strong>@User.Identity.Name</strong>.</p>
+        @if (User.IsInRole("Customer"))
+        {
+            <a class="btn btn-primary" asp-controller="Order" asp-action="Create">Place an Order</a>
+        }
+        else if (User.IsInRole("Employee") || User.IsInRole("Admin"))
+        {
+            <a class="btn btn-primary" asp-controller="Order" asp-action="List">View Orders</a>
+        }
+    }
+    else
+    {
+        <a class="btn btn-success" asp-controller="Users" asp-action="Register">Register</a>
+        <a class="btn btn-outline-primary" asp-area="Identity" asp-page="/Account/Login">Login</a>
+    }
+</div>

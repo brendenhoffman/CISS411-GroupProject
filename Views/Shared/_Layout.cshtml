@@ -1,47 +1,86 @@
-﻿<!DOCTYPE html>
+﻿@using Microsoft.AspNetCore.Identity
+@inject SignInManager<IdentityUser> SignInManager
+@inject UserManager<IdentityUser> UserManager
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - CISS411_GroupProject</title>
-    @using Microsoft.AspNetCore.Identity
-    @inject SignInManager<IdentityUser> SignInManager
-    @inject UserManager<IdentityUser> UserManager
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/CISS411_GroupProject.styles.css" asp-append-version="true" />
 </head>
 <body>
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+        <nav class="navbar navbar-expand-sm navbar-light bg-white border-bottom box-shadow mb-3">
             <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">CISS411_GroupProject</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                <a class="navbar-brand" asp-controller="Home" asp-action="Index">CISS411_GroupProject</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#mainNav" aria-controls="mainNav"
                         aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav ms-auto">
+
+                <div id="mainNav" class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                    <!-- Left side -->
+                    <ul class="navbar-nav">
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-controller="Home" asp-action="Index">Home</a>
+                        </li>
+
                         @if (SignInManager.IsSignedIn(User))
                         {
-                            <li class="nav-item">
-                                <span class="nav-link">Hello @User.Identity!.Name</span>
+                            <!-- Orders menu -->
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle text-dark" href="#" role="button" data-bs-toggle="dropdown">
+                                    Orders
+                                </a>
+                                <ul class="dropdown-menu">
+                                    @* Customer-only *@
+                                    @if (User.IsInRole("Customer"))
+                                    {
+                                        <li>
+                                            <a class="dropdown-item" asp-controller="Order" asp-action="Create">Create Order</a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" asp-controller="Order" asp-action="List" asp-route-filter="mine">My Orders</a>
+                                        </li>
+                                        <li><hr class="dropdown-divider" /></li>
+                                    }
+                                    @* Employee/Admin global list *@
+                                    @if (User.IsInRole("Employee") || User.IsInRole("Admin"))
+                                    {
+                                        <li>
+                                            <a class="dropdown-item" asp-controller="Order" asp-action="List">Order List</a>
+                                        </li>
+                                    }
+                                </ul>
                             </li>
 
+                            @* Admin/Employee tools *@
                             @if (User.IsInRole("Admin") || User.IsInRole("Employee"))
                             {
                                 <li class="nav-item">
                                     <a class="nav-link text-dark" asp-controller="Users" asp-action="List">Visitors</a>
                                 </li>
                             }
-
                             @if (User.IsInRole("Admin"))
                             {
                                 <li class="nav-item">
                                     <a class="nav-link text-dark" asp-controller="AdminUsers" asp-action="Index">Manage Roles</a>
                                 </li>
                             }
+                        }
+                    </ul>
 
+                    <!-- Right side -->
+                    <ul class="navbar-nav ms-auto">
+                        @if (SignInManager.IsSignedIn(User))
+                        {
+                            <li class="nav-item">
+                                <span class="nav-link">Hello @User.Identity!.Name</span>
+                            </li>
                             <li class="nav-item">
                                 <form asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="~/" method="post" class="d-inline">
                                     <button type="submit" class="btn btn-link nav-link p-0">Logout</button>
@@ -54,7 +93,6 @@
                                 <a class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Login">Login</a>
                             </li>
                             <li class="nav-item">
-                                <!-- Your custom register page -->
                                 <a class="nav-link text-dark" asp-controller="Users" asp-action="Register">Register</a>
                             </li>
                         }
@@ -63,6 +101,7 @@
             </div>
         </nav>
     </header>
+
     <div class="container">
         <main role="main" class="pb-3">
             @RenderBody()
@@ -71,49 +110,51 @@
 
     <footer class="border-top footer text-muted">
         <div class="container">
-            &copy; 2025 - CISS411_GroupProject - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+            &copy; @DateTime.Now.Year - CISS411_GroupProject
         </div>
     </footer>
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
-    @await RenderSectionAsync("Scripts", required: false)
-    <!-- Hidden trigger for modal -->
-    <button type="button" class="btn btn-primary d-none" id="notifyBtn" data-bs-toggle="modal" data-bs-target="#newUsersModal">
-        Show New Users
-    </button>
 
-    <!-- Modal -->
-    <div class="modal fade" id="newUsersModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Newly Registered Users</h5>
-                </div>
-                <div class="modal-body" id="newUsersList">
-                    <!-- Filled dynamically -->
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+    @* Admin/Employee-only modal + fetch *@
+    @if (SignInManager.IsSignedIn(User) && (User.IsInRole("Admin") || User.IsInRole("Employee")))
+    {
+        <button type="button" class="btn btn-primary d-none" id="notifyBtn" data-bs-toggle="modal" data-bs-target="#newUsersModal">
+            Show New Users
+        </button>
+
+        <div class="modal fade" id="newUsersModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header"><h5 class="modal-title">Newly Registered Users</h5></div>
+                    <div class="modal-body" id="newUsersList"></div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            fetch('/Notifications/NewRegistrations')
-                .then(r => (r.ok ? r.json() : []))
-                .then(users => {
-                    if (users.length > 0) {
-                        let listHtml = "<ul>";
-                        users.forEach(u => listHtml += `<li>${u.firstName}, ${u.lastName} - ${u.email}</li>`);
-                        listHtml += "</ul>";
-                        document.getElementById("newUsersList").innerHTML = listHtml;
-                        document.getElementById("notifyBtn").click();
-                    }
-                })
-                .catch(() => { /* ignore errors (e.g., 401) */ });
-        });
-    </script>
+
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                fetch('/Notifications/NewRegistrations')
+                    .then(r => (r.ok ? r.json() : []))
+                    .then(users => {
+                        if (users.length > 0) {
+                            let listHtml = "<ul>";
+                            users.forEach(u => listHtml += `<li>${u.firstName} ${u.lastName} - ${u.email}</li>`);
+                            listHtml += "</ul>";
+                            document.getElementById("newUsersList").innerHTML = listHtml;
+                            document.getElementById("notifyBtn").click();
+                        }
+                    })
+                    .catch(() => { /* ignore */ });
+            });
+        </script>
+    }
+
+    @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
