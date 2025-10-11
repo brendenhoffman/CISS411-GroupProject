@@ -24,7 +24,10 @@ builder.Services
   .AddDefaultTokenProviders();
 
 // Add services to the container.
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews(options =>
+{
+    options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true;
+});
 builder.Services.AddRazorPages();
 
 var app = builder.Build();

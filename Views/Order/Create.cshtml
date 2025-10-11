@@ -10,33 +10,35 @@ Story: User Story 2
 
 
 @model CISS411_GroupProject.Models.ViewModels.OrderFormViewModel
-
 @{
     ViewData["Title"] = "Place Order";
 }
 
 <h2>Place a Custom Order</h2>
 
+<!-- Show all server-side validation errors -->
+<div asp-validation-summary="All" class="text-danger"></div>
+
 <form asp-action="Create" method="post" id="orderForm">
     @Html.AntiForgeryToken()
 
     <!-- Order Details -->
     <div class="form-group">
-        <label asp-for="Order.Occasion"></label>
-        <input asp-for="Order.Occasion" class="form-control" />
-        <span asp-validation-for="Order.Occasion" class="text-danger"></span>
+        <label asp-for="OrderInput.Occasion"></label>
+        <input asp-for="OrderInput!.Occasion" class="form-control" />
+        <span asp-validation-for="OrderInput.Occasion" class="text-danger"></span>
     </div>
 
     <div class="form-group">
-        <label asp-for="Order.DeliveryDate"></label>
-        <input asp-for="Order.DeliveryDate" type="date" class="form-control" />
-        <span asp-validation-for="Order.DeliveryDate" class="text-danger"></span>
+        <label asp-for="OrderInput.DeliveryDate"></label>
+        <input asp-for="OrderInput!.DeliveryDate" type="date" class="form-control" />
+        <span asp-validation-for="OrderInput.DeliveryDate" class="text-danger"></span>
     </div>
 
     <div class="form-group">
-        <label asp-for="Order.Budget"></label>
-        <input asp-for="Order.Budget" type="number" step="0.01" class="form-control" />
-        <span asp-validation-for="Order.Budget" class="text-danger"></span>
+        <label asp-for="OrderInput.Budget"></label>
+        <input asp-for="OrderInput!.Budget" type="number" step="0.01" class="form-control" />
+        <span asp-validation-for="OrderInput.Budget" class="text-danger"></span>
     </div>
 
     <br />
@@ -67,17 +69,13 @@ Story: User Story 2
                     </div>
                 </div>
                 <div class="col-md-2">
-                    <button type="button" id="addSelectedItem" class="btn btn-success w-100">
-                        <i class="fas fa-plus"></i> Add
-                    </button>
+                    <button type="button" id="addSelectedItem" class="btn btn-success w-100">Add</button>
                 </div>
             </div>
             <div class="row mt-3">
                 <div class="col-12">
                     <div class="border-top pt-3">
-                        <button type="button" id="addCustomItem" class="btn btn-info">
-                            <i class="fas fa-magic"></i> Add Custom Design
-                        </button>
+                        <button type="button" id="addCustomItem" class="btn btn-info">Add Custom Design</button>
                         <small class="form-text text-muted">For custom designs not in our standard list</small>
                     </div>
                 </div>
@@ -88,11 +86,15 @@ Story: User Story 2
     <!-- Current Order Items -->
     <h4>Your Order Items</h4>
 
-    <div id="noItemsMessage" class="alert alert-info @(Model.Items.Any() ? "d-none" : "")">
+    @{
+        var hasItems = Model.Items != null && Model.Items.Any();
+    }
+
+    <div id="noItemsMessage" class="alert alert-info @(hasItems ? "d-none" : "")">
         No items added yet. Select a standard item or add a custom design.
     </div>
 
-    <div id="itemsSection" class="@(!Model.Items.Any() ? "d-none" : "")">
+    <div id="itemsSection" class="@(hasItems ? "" : "d-none")">
         <table class="table table-striped" id="itemsTable">
             <thead class="table-dark">
                 <tr>
@@ -103,25 +105,56 @@ Story: User Story 2
                 </tr>
             </thead>
             <tbody id="itemsBody">
-                <!-- Items will be added here dynamically -->
+                @* Re-render posted items so they don't vanish on validation errors *@
+                @for (var i = 0; i < Model.Items.Count; i++)
+                {
+                    var row = Model.Items[i];
+                    var isCustom = string.Equals(row.ItemName, "Custom Design", StringComparison.OrdinalIgnoreCase);
+
+                    <tr class="item-row">
+                        <td>
+                            <input type="hidden" name="Items[@i].ItemName" value="@(isCustom ? "Custom Design" : row.ItemName)" class="item-name-input" />
+                            <span class="item-name-display fw-bold">@(isCustom ? "Custom Design" : row.ItemName)</span>
+                            @if (isCustom)
+                            {
+                                <span class="badge bg-info ms-1">Custom</span>
+                            }
+                        </td>
+                        <td>
+                            <input name="Items[@i].Quantity" type="number" class="form-control quantity" min="1" value="@(row.Quantity == 0 ? 1 : row.Quantity)" required />
+                            <span class="text-danger small" data-valmsg-for="Items[@i].Quantity" data-valmsg-replace="true"></span>
+                        </td>
+                        <td>
+                            @if (isCustom)
+                            {
+                                <textarea name="Items[@i].CustomDescription" class="form-control custom-desc" rows="2" required>@row.CustomDescription</textarea>
+                                <span class="text-danger small" data-valmsg-for="Items[@i].CustomDescription" data-valmsg-replace="true"></span>
+                            }
+                            else
+                            {
+                                <input type="hidden" name="Items[@i].CustomDescription" value="" />
+                                <span class="text-muted">Standard item</span>
+                            }
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-danger btn-sm remove-item">Remove</button>
+                        </td>
+                    </tr>
+                }
             </tbody>
         </table>
     </div>
 
     <div class="mt-4">
-        <button type="submit" class="btn btn-primary btn-lg">
-            <i class="fas fa-check"></i> Submit Order
-        </button>
+        <button type="submit" class="btn btn-primary btn-lg">Submit Order</button>
     </div>
 </form>
 
 @section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
+    <partial name="_ValidationScriptsPartial" />
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const itemsBody = document.getElementById('itemsBody');
             const itemsSection = document.getElementById('itemsSection');
             const noItemsMessage = document.getElementById('noItemsMessage');
@@ -129,16 +162,96 @@ Story: User Story 2
             const addCustomButton = document.getElementById('addCustomItem');
             const itemSelector = document.getElementById('itemSelector');
             const itemQuantity = document.getElementById('itemQuantity');
-            let itemCount = 0;
 
-            // Add selected item from dropdown
-            addSelectedButton.addEventListener('click', function() {
-                const selectedOption = itemSelector.options[itemSelector.selectedIndex];
-                const quantity = parseInt(itemQuantity.value) || 1;
+            // Start itemCount from what's on the server (important after failed POST)
+            let itemCount = @Model.Items.Count;
 
-                if (selectedOption.value) {
-                    addItemRow(selectedOption.value, selectedOption.text, quantity, false);
-                    // Reset form
+            function showItemsSection() {
+                noItemsMessage.classList.add('d-none');
+                itemsSection.classList.remove('d-none');
+            }
+
+            function reindexItems() {
+                const rows = itemsBody.querySelectorAll('.item-row');
+                itemCount = 0;
+                rows.forEach((row, index) => {
+                    const nameInput = row.querySelector('.item-name-input');
+                    if (nameInput) nameInput.name = `Items[${index}].ItemName`;
+
+                    const qtyInput = row.querySelector('.quantity');
+                    if (qtyInput) qtyInput.name = `Items[${index}].Quantity`;
+
+                    const descInput = row.querySelector('textarea[name*="CustomDescription"], input[name*="CustomDescription"]');
+                    if (descInput) descInput.name = `Items[${index}].CustomDescription`;
+
+                    const qtyVal = row.querySelector('[data-valmsg-for*="Quantity"]');
+                    const descVal = row.querySelector('[data-valmsg-for*="CustomDescription"]');
+                    if (qtyVal) qtyVal.setAttribute('data-valmsg-for', `Items[${index}].Quantity`);
+                    if (descVal) descVal.setAttribute('data-valmsg-for', `Items[${index}].CustomDescription`);
+
+                    itemCount++;
+                });
+            }
+
+            function addItemRow(itemName, displayText, quantity, isCustom) {
+                showItemsSection();
+
+                const newRow = document.createElement('tr');
+                newRow.className = 'item-row';
+                newRow.innerHTML = isCustom
+                    ? `
+                        <td>
+                            <input type="hidden" name="Items[${itemCount}].ItemName" value="Custom Design" class="item-name-input" />
+                            <span class="item-name-display fw-bold">Custom Design</span>
+                            <span class="badge bg-info ms-1">Custom</span>
+                        </td>
+                        <td>
+                            <input name="Items[${itemCount}].Quantity" type="number" class="form-control quantity" min="1" value="${quantity || 1}" required />
+                            <span class="text-danger small" data-valmsg-for="Items[${itemCount}].Quantity" data-valmsg-replace="true"></span>
+                        </td>
+                        <td>
+                            <textarea name="Items[${itemCount}].CustomDescription" class="form-control custom-desc" rows="2" required></textarea>
+                            <span class="text-danger small" data-valmsg-for="Items[${itemCount}].CustomDescription" data-valmsg-replace="true"></span>
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-danger btn-sm remove-item">Remove</button>
+                        </td>
+                      `
+                    : `
+                        <td>
+                            <input type="hidden" name="Items[${itemCount}].ItemName" value="${itemName}" class="item-name-input" />
+                            <span class="item-name-display fw-bold">${displayText}</span>
+                        </td>
+                        <td>
+                            <input name="Items[${itemCount}].Quantity" type="number" class="form-control quantity" min="1" value="${quantity || 1}" required />
+                            <span class="text-danger small" data-valmsg-for="Items[${itemCount}].Quantity" data-valmsg-replace="true"></span>
+                        </td>
+                        <td>
+                            <input type="hidden" name="Items[${itemCount}].CustomDescription" value="" />
+                            <span class="text-muted">Standard item</span>
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-danger btn-sm remove-item">Remove</button>
+                        </td>
+                      `;
+                itemsBody.appendChild(newRow);
+                itemCount++;
+
+                newRow.querySelector('.remove-item').addEventListener('click', function () {
+                    newRow.remove();
+                    reindexItems();
+                    if (itemsBody.querySelectorAll('.item-row').length === 0) {
+                        itemsSection.classList.add('d-none');
+                        noItemsMessage.classList.remove('d-none');
+                    }
+                });
+            }
+
+            addSelectedButton.addEventListener('click', function () {
+                const opt = itemSelector.options[itemSelector.selectedIndex];
+                const qty = parseInt(itemQuantity.value) || 1;
+                if (opt.value) {
+                    addItemRow(opt.value, opt.text, qty, false);
                     itemSelector.value = '';
                     itemQuantity.value = '1';
                 } else {
@@ -146,186 +259,27 @@ Story: User Story 2
                 }
             });
 
-            // Add custom item
-            addCustomButton.addEventListener('click', function() {
-                const quantity = parseInt(itemQuantity.value) || 1;
-                addItemRow('Custom Design', 'Custom Design', quantity, true);
+            addCustomButton.addEventListener('click', function () {
+                const qty = parseInt(itemQuantity.value) || 1;
+                addItemRow('Custom Design', 'Custom Design', qty, true);
                 itemQuantity.value = '1';
             });
 
-            function addItemRow(itemName, displayText, quantity, isCustom) {
-                // Hide no items message, show items section
-                noItemsMessage.classList.add('d-none');
-                itemsSection.classList.remove('d-none');
+            // Reindex on initial render (important after server returned with Model.Items)
+            reindexItems();
 
-                const newRow = document.createElement('tr');
-                newRow.className = 'item-row';
-
-                if (isCustom) {
-                    newRow.innerHTML = `
-                        <td>
-                            <input type="hidden" name="Items[${itemCount}].ItemName" value="Custom Design" class="item-name-input" />
-                            <span class="item-name-display fw-bold">Custom Design</span>
-                            <span class="badge bg-info ms-1">Custom</span>
-                        </td>
-                        <td>
-                            <input name="Items[${itemCount}].Quantity" type="number" class="form-control quantity" min="1" value="${quantity}" required />
-                            <span class="text-danger field-validation-valid small" data-valmsg-for="Items[${itemCount}].Quantity" data-valmsg-replace="true"></span>
-                        </td>
-                        <td>
-                            <textarea name="Items[${itemCount}].CustomDescription" class="form-control custom-desc" placeholder="Please describe your custom design in detail..." rows="2" required></textarea>
-                            <span class="text-danger field-validation-valid small" data-valmsg-for="Items[${itemCount}].CustomDescription" data-valmsg-replace="true"></span>
-                        </td>
-                        <td>
-                            <button type="button" class="btn btn-danger btn-sm remove-item">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </td>
-                    `;
-                } else {
-                    newRow.innerHTML = `
-                        <td>
-                            <input type="hidden" name="Items[${itemCount}].ItemName" value="${itemName}" class="item-name-input" />
-                            <span class="item-name-display fw-bold">${displayText}</span>
-                        </td>
-                        <td>
-                            <input name="Items[${itemCount}].Quantity" type="number" class="form-control quantity" min="1" value="${quantity}" required />
-                            <span class="text-danger field-validation-valid small" data-valmsg-for="Items[${itemCount}].Quantity" data-valmsg-replace="true"></span>
-                        </td>
-                        <td>
-                            <input type="hidden" name="Items[${itemCount}].CustomDescription" value="" />
-                            <span class="text-muted">Standard item</span>
-                        </td>
-                        <td>
-                            <button type="button" class="btn btn-danger btn-sm remove-item">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </td>
-                    `;
-                }
-
-                itemsBody.appendChild(newRow);
-                itemCount++;
-
-                // Add event listener to new remove button
-                newRow.querySelector('.remove-item').addEventListener('click', function() {
-                    newRow.remove();
-                    reindexItems();
-                    checkEmptyItems();
-                });
-            }
-
-            // Remove item row
-            document.addEventListener('click', function(e) {
-                if (e.target.classList.contains('remove-item') || e.target.closest('.remove-item')) {
-                    const removeBtn = e.target.classList.contains('remove-item') ? e.target : e.target.closest('.remove-item');
-                    removeBtn.closest('.item-row').remove();
-                    reindexItems();
-                    checkEmptyItems();
-                }
-            });
-
-            // Check if no items remain
-            function checkEmptyItems() {
+            // Prevent submit if no items
+            document.getElementById('orderForm').addEventListener('submit', function (e) {
                 const rows = itemsBody.querySelectorAll('.item-row');
-                if (rows.length === 0) {
-                    noItemsMessage.classList.remove('d-none');
-                    itemsSection.classList.add('d-none');
-                }
-            }
-
-            // Reindex items to maintain proper model binding
-            function reindexItems() {
-                const rows = itemsBody.querySelectorAll('.item-row');
-                itemCount = 0;
-
-                rows.forEach((row, index) => {
-                    // Update hidden item name input
-                    const nameInput = row.querySelector('.item-name-input');
-                    if (nameInput) {
-                        nameInput.name = `Items[${index}].ItemName`;
-                    }
-
-                    // Update quantity input
-                    const quantityInput = row.querySelector('.quantity');
-                    if (quantityInput) {
-                        quantityInput.name = `Items[${index}].Quantity`;
-                    }
-
-                    // Update custom description input or hidden field
-                    const descInput = row.querySelector('textarea[name*="CustomDescription"], input[name*="CustomDescription"]');
-                    if (descInput) {
-                        descInput.name = `Items[${index}].CustomDescription`;
-                    }
-
-                    // Update validation spans
-                    const quantityValidation = row.querySelector('[data-valmsg-for*="Quantity"]');
-                    const descValidation = row.querySelector('[data-valmsg-for*="CustomDescription"]');
-
-                    if (quantityValidation) {
-                        quantityValidation.setAttribute('data-valmsg-for', `Items[${index}].Quantity`);
-                    }
-                    if (descValidation) {
-                        descValidation.setAttribute('data-valmsg-for', `Items[${index}].CustomDescription`);
-                    }
-
-                    itemCount++;
-                });
-            }
-
-            // Form submission validation
-            document.getElementById('orderForm').addEventListener('submit', function(e) {
-                const rows = itemsBody.querySelectorAll('.item-row');
-                let hasErrors = false;
-
                 if (rows.length === 0) {
                     alert('Please add at least one item to your order.');
                     e.preventDefault();
-                    return;
-                }
-
-                rows.forEach((row, index) => {
-                    const isCustom = row.querySelector('.badge') !== null;
-                    const quantity = row.querySelector('.quantity').value;
-                    const customDesc = row.querySelector('.custom-desc');
-
-                    if (!quantity || quantity < 1) {
-                        alert(`Please enter a valid quantity for item ${index + 1}.`);
-                        hasErrors = true;
-                    }
-
-                    if (isCustom && customDesc && !customDesc.value.trim()) {
-                        alert(`Please provide a description for custom item ${index + 1}.`);
-                        hasErrors = true;
-                    }
-                });
-
-                if (hasErrors) {
-                    e.preventDefault();
-                }
-            });
-
-            // Allow Enter key to add item
-            itemSelector.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    addSelectedButton.click();
-                }
-            });
-
-            itemQuantity.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    if (itemSelector.value) {
-                        addSelectedButton.click();
-                    } else {
-                        addCustomButton.click();
-                    }
                 }
             });
         });
     </script>
 }
+
 
 @*  LINDA: REMOVED TO UPDATE ORDER FORM (Saved in case regression is needed)
 @model CISS411_GroupProject.Models.ViewModels.OrderFormViewModel

@@ -1,321 +1,254 @@
 ﻿/*
 Course #: CISS 411
 Course Name: Software Architecture with ASP.NET with MVC
-Group 3: Ashley Steward, Linda Daniel,Allan Lopesandovall,
+Group 3: Ashley Steward, Linda Daniel, Allan Lopesandovall,
 Brenden Hoffman, Jason Farr, Jerome Whitaker,
 Jason Farr and Justin Kim.
 Date Completed: 10-2-2025
-Story Assigne: Ashley Steward 
+Story Assignee: Ashley Steward
 Story: User Story 2
 */
-
 
 using CISS411_GroupProject.Data;
 using CISS411_GroupProject.Models;
 using CISS411_GroupProject.Models.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
-public class OrderController : Controller
+namespace CISS411_GroupProject.Controllers
 {
-	private readonly AppDbContext _context;
-	private readonly UserManager<IdentityUser> _userManager;
+    public class OrderController : Controller
+    {
+        private readonly AppDbContext _context;
+        private readonly UserManager<IdentityUser> _userManager;
 
-	public OrderController(AppDbContext context, UserManager<IdentityUser> userManager)
-	{
-		_context = context;
-		_userManager = userManager;
-	}
+        public OrderController(AppDbContext context, UserManager<IdentityUser> userManager)
+        {
+            _context = context;
+            _userManager = userManager;
+        }
 
-	// GET: Order/Create
-	public async Task<IActionResult> Create()
-	{
-		// Get available items from existing OrderItems
-		var availableItems = await _context.OrderItems
-			.Select(oi => oi.ItemName)
-			.Distinct()
-			.Where(name => name != "Custom Design") // Exclude custom design from standard list
-			.OrderBy(name => name)
-			.Select(name => new SelectListItem { Value = name, Text = name })
-			.ToListAsync();
+        // GET: /Order/Create
+        [Authorize(Roles = "Customer")]
+        public async Task<IActionResult> Create()
+        {
+            var availableItems = await GetAvailableItemsAsync();
 
-		var model = new OrderFormViewModel
-		{
-			Order = new Order { DeliveryDate = DateTime.Today.AddDays(1) },
-			Items = new List<OrderItem>(), // Start with EMPTY list
-			AvailableItems = availableItems
-		};
+            var model = new OrderFormViewModel
+            {
+                OrderInput = new Order { DeliveryDate = DateTime.Today.AddDays(1) },
+                Items = new List<OrderItem>(), // start empty; the view lets user add rows
+                AvailableItems = availableItems
+            };
 
-		return View(model);
-	}
+            return View(model);
+        }
 
-	[HttpPost]
-	[ValidateAntiForgeryToken]
-	public async Task<IActionResult> Create(OrderFormViewModel model)
-	{
-		// DEBUG: Check what's coming in
-		Console.WriteLine($"ModelState IsValid: {ModelState.IsValid}");
-		Console.WriteLine($"Items count: {model.Items?.Count}");
+        // POST: /Order/Create
+        [HttpPost]
+        [Authorize(Roles = "Customer")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(OrderFormViewModel model)
+        {
+            foreach (var kvp in ModelState)
+            {
+                var errors = kvp.Value?.Errors;
+                if (errors != null && errors.Count > 0)
+                {
+                    Console.WriteLine($"MODELSTATE: {kvp.Key} => {string.Join("; ", errors.Select(e => e.ErrorMessage))}");
+                }
+            }
+            // Ensure collections exist when re-rendering the view
+            model.Items ??= new List<OrderItem>();
 
-		if (model.Items != null)
-		{
-			for (int i = 0; i < model.Items.Count; i++)
-			{
-				var item = model.Items[i];
-				Console.WriteLine($"Item {i}: Name='{item.ItemName}', Quantity={item.Quantity}, CustomDesc='{item.CustomDescription}'");
-			}
+            // These aren’t posted from the form; we’ll set them server-side
+            ModelState.Remove("OrderInput");             // top-level complex property not posted as a single value
+            ModelState.Remove("OrderInput.Customer");    // navigation prop
+            ModelState.Remove("OrderInput.CustomerID");  // FK
+            ModelState.Remove("OrderInput.OrderID");     // identity key, not posted
 
-			// Remove empty items
-			model.Items = model.Items
-				.Where(item => !string.IsNullOrWhiteSpace(item.ItemName) && item.Quantity > 0)
-				.ToList();
-		}
+            // Bind logged-in user to the order BEFORE validation
+            var userId = await GetLoggedInUserIdAsync();
+            if (userId == 0)
+            {
+                ModelState.AddModelError(string.Empty, "User not found.");
+            }
+            else
+            {
+                model.OrderInput.CustomerID = userId;
+            }
 
+            // Trim away blank items
+            model.Items = model.Items
+                .Where(i => !string.IsNullOrWhiteSpace(i.ItemName) && i.Quantity > 0)
+                .ToList();
 
+            // Per-item validation
+            for (int i = 0; i < model.Items.Count; i++)
+            {
+                var item = model.Items[i];
 
-		// Custom validation for items
-		if (model.Items != null)
-		{
-			for (int i = 0; i < model.Items.Count; i++)
-			{
-				var item = model.Items[i];
+                if (item.ItemName == "Custom Design" && string.IsNullOrWhiteSpace(item.CustomDescription))
+                {
+                    ModelState.AddModelError($"Items[{i}].CustomDescription", "Custom description is required for custom items.");
+                }
 
-				// Custom items require description
-				if (item.ItemName == "Custom Design" && string.IsNullOrWhiteSpace(item.CustomDescription))
-				{
-					ModelState.AddModelError($"Items[{i}].CustomDescription", "Custom description is required for custom items.");
-				}
+                if (item.ItemName != "Custom Design")
+                {
+                    item.CustomDescription = null; // don’t carry a desc for standard items
+                }
+            }
 
-				// Standard items should not have custom description
-				if (item.ItemName != "Custom Design")
-				{
-					item.CustomDescription = null;
-				}
-			}
-		}
+            // Require at least one item
+            if (!model.Items.Any())
+            {
+                ModelState.AddModelError(string.Empty, "Please add at least one item to your order.");
+            }
 
+            foreach (var kvp in ModelState.Where(k => k.Value?.Errors.Count > 0))
+            {
+                Console.WriteLine($"{kvp.Key} => {string.Join("; ", kvp.Value!.Errors.Select(e => e.ErrorMessage))}");
+            }
 
+            ModelState.Clear();
+            TryValidateModel(model);
 
-		// Check for valid items
-		if (model.Items == null || !model.Items.Any())
-		{
-			ModelState.AddModelError("", "Please add at least one item to your order.");
-		}
+            if (!ModelState.IsValid)
+            {
+                model.AvailableItems = await GetAvailableItemsAsync();
+                return View(model);
+            }
 
-		// Check ModelState after our custom validation
-		if (!ModelState.IsValid)
-		{
-			Console.WriteLine("ModelState is invalid. Errors:");
-			foreach (var error in ModelState.Values.SelectMany(v => v.Errors))
-			{
-				Console.WriteLine($" - {error.ErrorMessage}");
-			}
+            try
+            {
+                model.OrderInput.Status = "Pending";
+                model.OrderInput.CreatedAt = DateTime.Now;
 
-			model.AvailableItems = await GetAvailableItemsAsync();
-			return View(model);
-		}
+                _context.Orders.Add(model.OrderInput);
+                await _context.SaveChangesAsync(); // get OrderID
 
-		try
-		{
-			var userId = await GetLoggedInUserIdAsync();
-			if (userId == 0)
-			{
-				ModelState.AddModelError("", "User not found.");
-				model.AvailableItems = await GetAvailableItemsAsync();
-				return View(model);
-			}
+                foreach (var item in model.Items)
+                {
+                    item.OrderID = model.OrderInput.OrderID;
 
-			model.Order.CustomerID = userId;
-			model.Order.Status = "Pending";
-			model.Order.CreatedAt = DateTime.Now;
+                    if (item.ItemName == "Custom Design")
+                    {
+                        item.DesignApproved = false; // requires approval
+                    }
+                    else
+                    {
+                        item.DesignApproved = true;  // standard items auto-approved
+                        item.CustomDescription = null;
+                    }
 
-			_context.Orders.Add(model.Order);
-			await _context.SaveChangesAsync(); // Save to get OrderID
+                    _context.OrderItems.Add(item);
+                }
 
-			// Process order items
-			foreach (var item in model.Items)
-			{
-				if (!string.IsNullOrWhiteSpace(item.ItemName) && item.Quantity > 0)
-				{
-					item.OrderID = model.Order.OrderID;
+                await _context.SaveChangesAsync();
 
-					// Handle custom design
-					if (item.ItemName == "Custom Design")
-					{
-						item.DesignApproved = false; // needs approval for custom items
-													 // CustomDescription should already be set from the form
-					}
-					else
-					{
-						item.DesignApproved = true; // standard items auto-approved
-						item.CustomDescription = null; // Clear for standard items
-					}
+                TempData["SuccessMessage"] = "Your order has been placed successfully!";
+                return RedirectToAction(nameof(Details), new { id = model.OrderInput.OrderID });
+            }
+            catch (Exception ex)
+            {
+                // You can log ex here
+                ModelState.AddModelError(string.Empty, "An error occurred while processing your order. Please try again.");
+                model.AvailableItems = await GetAvailableItemsAsync();
+                return View(model);
+            }
+        }
 
-					_context.OrderItems.Add(item);
-				}
-			}
+        // GET: /Order/Details/{id}
+        [Authorize(Roles = "Admin,Employee,Customer")]
+        public async Task<IActionResult> Details(int id)
+        {
+            var order = await _context.Orders
+                .Include(o => o.Customer)
+                .Include(o => o.OrderItems)
+                .FirstOrDefaultAsync(o => o.OrderID == id);
 
-			await _context.SaveChangesAsync();
+            if (order == null) return NotFound();
 
-			TempData["SuccessMessage"] = "Your order has been placed successfully!";
-			return RedirectToAction(nameof(Details), new { id = model.Order.OrderID });
-		}
-		catch (Exception ex)
-		{
-			Console.WriteLine($"Exception: {ex.Message}");
-			Console.WriteLine($"Stack Trace: {ex.StackTrace}");
+            // Customers can only view their own orders
+            if (User.IsInRole("Customer"))
+            {
+                var userId = await GetLoggedInUserIdAsync();
+                if (order.CustomerID != userId) return Forbid();
+            }
 
-			ModelState.AddModelError("", "An error occurred while processing your order. Please try again or call 1-800-555-SMITH.");
-			model.AvailableItems = await GetAvailableItemsAsync();
-			return View(model);
-		}
-	}
+            return View(order);
+        }
 
-	/*  LINDA: REMOVED TO UPDATE CREATE()
-	// POST: Order/Create
-	[HttpPost]
-	[ValidateAntiForgeryToken]
-	public async Task<IActionResult> Create(OrderFormViewModel model)
-	{
-		// Remove empty items before validation
-		if (model.Items != null)
-		{
-			model.Items = model.Items
-				.Where(item => !string.IsNullOrWhiteSpace(item.ItemName) && item.Quantity > 0)
-				.ToList();
-		}
+        // GET: /Order/List
+        [Authorize(Roles = "Admin,Employee,Customer")]
+        public async Task<IActionResult> List(string? status = null)
+        {
+            var q = _context.Orders
+                .Include(o => o.Customer)
+                .Include(o => o.OrderItems)
+                .AsQueryable();
 
-		if (!ModelState.IsValid || model.Items == null || !model.Items.Any())
-		{
-			if (!model.Items.Any())
-			{
-				ModelState.AddModelError("", "Please add at least one item to your order.");
-			}
+            if (User.IsInRole("Customer"))
+            {
+                var userId = await GetLoggedInUserIdAsync();
+                q = q.Where(o => o.CustomerID == userId);
+            }
+            else if (!string.IsNullOrEmpty(status))
+            {
+                q = q.Where(o => o.Status == status);
+            }
 
-			// Repopulate AvailableItems
-			model.AvailableItems = await GetAvailableItemsAsync();
-			return View(model);
-		}
+            var orders = await q
+                .OrderByDescending(o => o.CreatedAt)
+                .ToListAsync();
 
-		var userId = await GetLoggedInUserIdAsync();
-		if (userId == 0)
-		{
-			ModelState.AddModelError("", "User not found.");
-			model.AvailableItems = await GetAvailableItemsAsync();
-			return View(model);
-		}
+            return View(orders);
+        }
 
-		model.Order.CustomerID = userId;
-		model.Order.Status = "Pending";
-		model.Order.CreatedAt = DateTime.Now;
+        // POST: /Order/UpdateStatus
+        [HttpPost]
+        [Authorize(Roles = "Admin,Employee")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateStatus(int id, string status)
+        {
+            var order = await _context.Orders.FindAsync(id);
+            if (order == null) return NotFound();
 
-		_context.Orders.Add(model.Order);
-		await _context.SaveChangesAsync();
+            order.Status = status;
+            order.UpdatedAt = DateTime.Now;
+            _context.Update(order);
+            await _context.SaveChangesAsync();
 
-		// Process order items
-		foreach (var item in model.Items)
-		{
-			if (!string.IsNullOrWhiteSpace(item.ItemName) && item.Quantity > 0)
-			{
-				item.OrderID = model.Order.OrderID;
+            TempData["SuccessMessage"] = $"Order status updated to {status}.";
+            return RedirectToAction(nameof(Details), new { id });
+        }
 
-				// Handle custom design
-				if (item.ItemName == "Custom Design" && !string.IsNullOrWhiteSpace(item.CustomDescription))
-				{
-					// Keep "Custom Design" as ItemName, store details in CustomDescription
-					item.DesignApproved = false; // needs approval for custom items
-				}
-				else
-				{
-					item.DesignApproved = true; // standard items auto-approved
-					item.CustomDescription = null; // Clear for standard items
-				}
+        // Helper: Get available items from existing OrderItems
+        private async Task<List<SelectListItem>> GetAvailableItemsAsync()
+        {
+            return await _context.OrderItems
+                .Select(oi => oi.ItemName)
+                .Distinct()
+                .Where(name => name != "Custom Design")
+                .OrderBy(name => name)
+                .Select(name => new SelectListItem { Value = name, Text = name })
+                .ToListAsync();
+        }
 
-				_context.OrderItems.Add(item);
-			}
-		}
+        // Helper: Get logged-in AppUser ID from Identity
+        private async Task<int> GetLoggedInUserIdAsync()
+        {
+            var identityUserId = _userManager.GetUserId(User);
+            if (identityUserId == null) return 0;
 
-		await _context.SaveChangesAsync();
+            var appUser = await _context.AppUsers
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.IdentityUserId == identityUserId);
 
-		TempData["SuccessMessage"] = "Your order has been placed successfully!";
-		return RedirectToAction(nameof(Details), new { id = model.Order.OrderID });
-	}
-	*/
-
-
-	// GET: Order/Details/{id}
-	public async Task<IActionResult> Details(int id)
-	{
-		var order = await _context.Orders
-			.Include(o => o.Customer)
-			.Include(o => o.OrderItems)
-			.FirstOrDefaultAsync(o => o.OrderID == id);
-
-		if (order == null) return NotFound();
-		return View(order);
-	}
-
-	// GET: Order/List
-	public async Task<IActionResult> List(string status = null)
-	{
-		var orders = _context.Orders
-			.Include(o => o.Customer)
-			.Include(o => o.OrderItems)
-			.AsQueryable();
-
-		if (User.IsInRole("Customer"))
-		{
-			var userId = await GetLoggedInUserIdAsync();
-			orders = orders.Where(o => o.CustomerID == userId);
-		}
-		else if (!string.IsNullOrEmpty(status))
-		{
-			orders = orders.Where(o => o.Status == status);
-		}
-
-		return View(await orders.ToListAsync());
-	}
-
-	// POST: Order/UpdateStatus
-	[HttpPost]
-	public async Task<IActionResult> UpdateStatus(int id, string status)
-	{
-		var order = await _context.Orders.FindAsync(id);
-		if (order == null) return NotFound();
-
-		order.Status = status;
-		order.UpdatedAt = DateTime.Now;
-		_context.Update(order);
-		await _context.SaveChangesAsync();
-
-		TempData["SuccessMessage"] = $"Order status updated to {status}.";
-		return RedirectToAction(nameof(Details), new { id });
-	}
-
-	// Helper: Get available items from existing OrderItems
-	private async Task<List<SelectListItem>> GetAvailableItemsAsync()
-	{
-		var items = await _context.OrderItems
-			.Select(oi => oi.ItemName)
-			.Distinct()
-			.Where(name => name != "Custom Design") // Exclude custom design from standard list
-			.OrderBy(name => name)
-			.Select(name => new SelectListItem { Value = name, Text = name })
-			.ToListAsync();
-		return items;
-	}
-
-	// Helper: Get logged-in user ID from Identity
-	private async Task<int> GetLoggedInUserIdAsync()
-	{
-		var identityUserId = _userManager.GetUserId(User);
-		var appUser = await _context.AppUsers.FirstOrDefaultAsync(u => u.IdentityUserId == identityUserId);
-		return appUser?.UserID ?? 0;
-	}
+            return appUser?.UserID ?? 0;
+        }
+    }
 }

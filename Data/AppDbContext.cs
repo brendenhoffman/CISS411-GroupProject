@@ -81,10 +81,13 @@ namespace CISS411_GroupProject.Data
                 e.Property(x => x.ItemName).IsRequired().HasMaxLength(100);
                 e.Property(x => x.Quantity).IsRequired();
 
+                e.Property(x => x.CustomDescription).HasMaxLength(500).IsRequired(false);
+                e.Property(x => x.DesignApproved).HasDefaultValue(false).IsRequired();
+
                 e.HasOne(x => x.Order)
-                  .WithMany(o => o.OrderItems)
-                  .HasForeignKey(x => x.OrderID)
-                  .OnDelete(DeleteBehavior.Cascade);
+                 .WithMany(o => o.OrderItems)
+                 .HasForeignKey(x => x.OrderID)
+                 .OnDelete(DeleteBehavior.Cascade);
             });
 
             // DESIGNS
