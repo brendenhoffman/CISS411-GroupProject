@@ -18,6 +18,9 @@ namespace CISS411_GroupProject.Models
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
 
+        [Display(Name = "Design Image URL")]
+        public string DesignImageUrl { get; set; }
+
         // Nav
         public User? Customer { get; set; } = null!;
         public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();

@@ -2,7 +2,7 @@
 Course #: CISS 411
 Course Name: Software Architecture with ASP.NET with MVC
 
-Group 3: Ashley Steward, Linda Daniel,Allan Lopesandovall, Brenden Hoffman, 
+Group 3: Ashley Steward, Linda Daniel,Allan Lopesandoval, Brenden Hoffman, 
 Jason Farr, Jerome Whitaker, Jason Farr and Justin Kim.
 
 Date Completed: 10-2-2025
@@ -33,6 +33,24 @@ Story: User Story 2
     <p><strong>Status:</strong> @Model.Status</p>
     <p><strong>Customer:</strong> @Model.Customer.FirstName @Model.Customer.LastName</p>
 </div>
+
+<div class="order-photo mb-3 text-center">
+    <img src="@Model.DesignImageUrl"
+         alt="Baked Good Design"
+         class="img-fluid rounded shadow-sm"
+         style="max-width:400px;" />
+</div>
+@if (Model.Status != "Approved")
+{
+    <form asp-action="ApproveDesign" method="post">
+        <input type="hidden" name="id" value="@Model.OrderID" />
+        <button type="submit" class="btn btn-success">Approve Design</button>
+    </form>
+}
+else
+{
+    <p class="text-success fw-bold mt-3">✅ Design Approved</p>
+}
 
 <h4>Order Items</h4>
 <table class="table table-bordered">

@@ -250,5 +250,19 @@ namespace CISS411_GroupProject.Controllers
 
             return appUser?.UserID ?? 0;
         }
+        [HttpPost]
+        public async Task<IActionResult> ApproveDesign(int id)
+        {
+            var order = await _context.Orders.FindAsync(id);
+            if (order == null)
+                return NotFound();
+
+            order.Status = "Approved";
+            _context.Update(order);
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "Design approved successfully!";
+            return RedirectToAction(nameof(Details), new { id = order.OrderID });
+        }
     }
 }
