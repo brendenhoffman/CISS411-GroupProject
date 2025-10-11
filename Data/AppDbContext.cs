@@ -96,6 +96,12 @@ namespace CISS411_GroupProject.Data
                 e.HasKey(x => x.DesignID);
                 e.Property(x => x.ImagePath).IsRequired().HasMaxLength(255);
                 e.Property(x => x.UploadedAt).HasDefaultValueSql("GETDATE()");
+                e.Property(x => x.ProposedQuantity).IsRequired();
+                e.Property(x => x.EstimatedCost).HasColumnType("decimal(10,2)").IsRequired();
+                e.Property(x => x.DesignNotes).HasMaxLength(500).IsRequired(false);
+                e.Property(x => x.IsApproved).IsRequired().HasDefaultValue(false);
+                e.Property(x => x.ApprovedAt).IsRequired(false);
+                e.Property(x => x.ApprovedByCustomerID).IsRequired(false);
 
                 e.HasOne(x => x.Order)
                   .WithMany(o => o.Designs)
