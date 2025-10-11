@@ -1,14 +1,335 @@
-﻿@model CISS411_GroupProject.Models.ViewModels.OrderFormViewModel
-
-@*
-    Course #: CISS 411
+﻿@*
+Course #: CISS 411
 Course Name: Software Architecture with ASP.NET with MVC
-Group 2: Ashley Steward, Linda Daniel,Allan Lopesandovall, Brenden Hoffman, 
+Group 3: Ashley Steward, Linda Daniel,Allan Lopesandovall, Brenden Hoffman, 
 Jason Farr, Jerome Whitaker, Jason Farr and Justin Kim.
 Date Completed: 10-2-2025
 Story Assigne: Ashley Steward 
 Story: User Story 2
 *@
+
+
+@model CISS411_GroupProject.Models.ViewModels.OrderFormViewModel
+
+@{
+    ViewData["Title"] = "Place Order";
+}
+
+<h2>Place a Custom Order</h2>
+
+<form asp-action="Create" method="post" id="orderForm">
+    @Html.AntiForgeryToken()
+
+    <!-- Order Details -->
+    <div class="form-group">
+        <label asp-for="Order.Occasion"></label>
+        <input asp-for="Order.Occasion" class="form-control" />
+        <span asp-validation-for="Order.Occasion" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Order.DeliveryDate"></label>
+        <input asp-for="Order.DeliveryDate" type="date" class="form-control" />
+        <span asp-validation-for="Order.DeliveryDate" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Order.Budget"></label>
+        <input asp-for="Order.Budget" type="number" step="0.01" class="form-control" />
+        <span asp-validation-for="Order.Budget" class="text-danger"></span>
+    </div>
+
+    <br />
+
+    <!-- Add Items Section -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Add Items to Order</h5>
+        </div>
+        <div class="card-body">
+            <div class="row align-items-end">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label>Select Standard Item</label>
+                        <select id="itemSelector" class="form-control">
+                            <option value="">-- Select Standard Item --</option>
+                            @foreach (var item in Model.AvailableItems.Where(x => !string.IsNullOrEmpty(x.Value)))
+                            {
+                                <option value="@item.Value">@item.Text</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label>Quantity</label>
+                        <input type="number" id="itemQuantity" class="form-control" min="1" value="1" />
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <button type="button" id="addSelectedItem" class="btn btn-success w-100">
+                        <i class="fas fa-plus"></i> Add
+                    </button>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-12">
+                    <div class="border-top pt-3">
+                        <button type="button" id="addCustomItem" class="btn btn-info">
+                            <i class="fas fa-magic"></i> Add Custom Design
+                        </button>
+                        <small class="form-text text-muted">For custom designs not in our standard list</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Current Order Items -->
+    <h4>Your Order Items</h4>
+
+    <div id="noItemsMessage" class="alert alert-info @(Model.Items.Any() ? "d-none" : "")">
+        No items added yet. Select a standard item or add a custom design.
+    </div>
+
+    <div id="itemsSection" class="@(!Model.Items.Any() ? "d-none" : "")">
+        <table class="table table-striped" id="itemsTable">
+            <thead class="table-dark">
+                <tr>
+                    <th>Item Name</th>
+                    <th width="120">Quantity</th>
+                    <th>Description</th>
+                    <th width="100">Action</th>
+                </tr>
+            </thead>
+            <tbody id="itemsBody">
+                <!-- Items will be added here dynamically -->
+            </tbody>
+        </table>
+    </div>
+
+    <div class="mt-4">
+        <button type="submit" class="btn btn-primary btn-lg">
+            <i class="fas fa-check"></i> Submit Order
+        </button>
+    </div>
+</form>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const itemsBody = document.getElementById('itemsBody');
+            const itemsSection = document.getElementById('itemsSection');
+            const noItemsMessage = document.getElementById('noItemsMessage');
+            const addSelectedButton = document.getElementById('addSelectedItem');
+            const addCustomButton = document.getElementById('addCustomItem');
+            const itemSelector = document.getElementById('itemSelector');
+            const itemQuantity = document.getElementById('itemQuantity');
+            let itemCount = 0;
+
+            // Add selected item from dropdown
+            addSelectedButton.addEventListener('click', function() {
+                const selectedOption = itemSelector.options[itemSelector.selectedIndex];
+                const quantity = parseInt(itemQuantity.value) || 1;
+
+                if (selectedOption.value) {
+                    addItemRow(selectedOption.value, selectedOption.text, quantity, false);
+                    // Reset form
+                    itemSelector.value = '';
+                    itemQuantity.value = '1';
+                } else {
+                    alert('Please select an item first.');
+                }
+            });
+
+            // Add custom item
+            addCustomButton.addEventListener('click', function() {
+                const quantity = parseInt(itemQuantity.value) || 1;
+                addItemRow('Custom Design', 'Custom Design', quantity, true);
+                itemQuantity.value = '1';
+            });
+
+            function addItemRow(itemName, displayText, quantity, isCustom) {
+                // Hide no items message, show items section
+                noItemsMessage.classList.add('d-none');
+                itemsSection.classList.remove('d-none');
+
+                const newRow = document.createElement('tr');
+                newRow.className = 'item-row';
+
+                if (isCustom) {
+                    newRow.innerHTML = `
+                        <td>
+                            <input type="hidden" name="Items[${itemCount}].ItemName" value="Custom Design" class="item-name-input" />
+                            <span class="item-name-display fw-bold">Custom Design</span>
+                            <span class="badge bg-info ms-1">Custom</span>
+                        </td>
+                        <td>
+                            <input name="Items[${itemCount}].Quantity" type="number" class="form-control quantity" min="1" value="${quantity}" required />
+                            <span class="text-danger field-validation-valid small" data-valmsg-for="Items[${itemCount}].Quantity" data-valmsg-replace="true"></span>
+                        </td>
+                        <td>
+                            <textarea name="Items[${itemCount}].CustomDescription" class="form-control custom-desc" placeholder="Please describe your custom design in detail..." rows="2" required></textarea>
+                            <span class="text-danger field-validation-valid small" data-valmsg-for="Items[${itemCount}].CustomDescription" data-valmsg-replace="true"></span>
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-danger btn-sm remove-item">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </td>
+                    `;
+                } else {
+                    newRow.innerHTML = `
+                        <td>
+                            <input type="hidden" name="Items[${itemCount}].ItemName" value="${itemName}" class="item-name-input" />
+                            <span class="item-name-display fw-bold">${displayText}</span>
+                        </td>
+                        <td>
+                            <input name="Items[${itemCount}].Quantity" type="number" class="form-control quantity" min="1" value="${quantity}" required />
+                            <span class="text-danger field-validation-valid small" data-valmsg-for="Items[${itemCount}].Quantity" data-valmsg-replace="true"></span>
+                        </td>
+                        <td>
+                            <input type="hidden" name="Items[${itemCount}].CustomDescription" value="" />
+                            <span class="text-muted">Standard item</span>
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-danger btn-sm remove-item">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </td>
+                    `;
+                }
+
+                itemsBody.appendChild(newRow);
+                itemCount++;
+
+                // Add event listener to new remove button
+                newRow.querySelector('.remove-item').addEventListener('click', function() {
+                    newRow.remove();
+                    reindexItems();
+                    checkEmptyItems();
+                });
+            }
+
+            // Remove item row
+            document.addEventListener('click', function(e) {
+                if (e.target.classList.contains('remove-item') || e.target.closest('.remove-item')) {
+                    const removeBtn = e.target.classList.contains('remove-item') ? e.target : e.target.closest('.remove-item');
+                    removeBtn.closest('.item-row').remove();
+                    reindexItems();
+                    checkEmptyItems();
+                }
+            });
+
+            // Check if no items remain
+            function checkEmptyItems() {
+                const rows = itemsBody.querySelectorAll('.item-row');
+                if (rows.length === 0) {
+                    noItemsMessage.classList.remove('d-none');
+                    itemsSection.classList.add('d-none');
+                }
+            }
+
+            // Reindex items to maintain proper model binding
+            function reindexItems() {
+                const rows = itemsBody.querySelectorAll('.item-row');
+                itemCount = 0;
+
+                rows.forEach((row, index) => {
+                    // Update hidden item name input
+                    const nameInput = row.querySelector('.item-name-input');
+                    if (nameInput) {
+                        nameInput.name = `Items[${index}].ItemName`;
+                    }
+
+                    // Update quantity input
+                    const quantityInput = row.querySelector('.quantity');
+                    if (quantityInput) {
+                        quantityInput.name = `Items[${index}].Quantity`;
+                    }
+
+                    // Update custom description input or hidden field
+                    const descInput = row.querySelector('textarea[name*="CustomDescription"], input[name*="CustomDescription"]');
+                    if (descInput) {
+                        descInput.name = `Items[${index}].CustomDescription`;
+                    }
+
+                    // Update validation spans
+                    const quantityValidation = row.querySelector('[data-valmsg-for*="Quantity"]');
+                    const descValidation = row.querySelector('[data-valmsg-for*="CustomDescription"]');
+
+                    if (quantityValidation) {
+                        quantityValidation.setAttribute('data-valmsg-for', `Items[${index}].Quantity`);
+                    }
+                    if (descValidation) {
+                        descValidation.setAttribute('data-valmsg-for', `Items[${index}].CustomDescription`);
+                    }
+
+                    itemCount++;
+                });
+            }
+
+            // Form submission validation
+            document.getElementById('orderForm').addEventListener('submit', function(e) {
+                const rows = itemsBody.querySelectorAll('.item-row');
+                let hasErrors = false;
+
+                if (rows.length === 0) {
+                    alert('Please add at least one item to your order.');
+                    e.preventDefault();
+                    return;
+                }
+
+                rows.forEach((row, index) => {
+                    const isCustom = row.querySelector('.badge') !== null;
+                    const quantity = row.querySelector('.quantity').value;
+                    const customDesc = row.querySelector('.custom-desc');
+
+                    if (!quantity || quantity < 1) {
+                        alert(`Please enter a valid quantity for item ${index + 1}.`);
+                        hasErrors = true;
+                    }
+
+                    if (isCustom && customDesc && !customDesc.value.trim()) {
+                        alert(`Please provide a description for custom item ${index + 1}.`);
+                        hasErrors = true;
+                    }
+                });
+
+                if (hasErrors) {
+                    e.preventDefault();
+                }
+            });
+
+            // Allow Enter key to add item
+            itemSelector.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addSelectedButton.click();
+                }
+            });
+
+            itemQuantity.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (itemSelector.value) {
+                        addSelectedButton.click();
+                    } else {
+                        addCustomButton.click();
+                    }
+                }
+            });
+        });
+    </script>
+}
+
+@*  LINDA: REMOVED TO UPDATE ORDER FORM (Saved in case regression is needed)
+@model CISS411_GroupProject.Models.ViewModels.OrderFormViewModel
+
 @{
 
     ViewData["Title"] = "Place Order";
@@ -71,3 +392,4 @@ Story: User Story 2
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
 }
+*@
