@@ -1,0 +1,259 @@
+﻿@model CISS411_GroupProject.ViewModels.OrderDesignsViewModel
+
+@{
+    ViewData["Title"] = "Design Proposals";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    @TempData["SuccessMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    @TempData["Error"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Design Proposals for Order #@Model.Order.OrderID</h2>
+                <div>
+                    @if (Model.CanUpload)
+                    {
+                        <a asp-action="Upload" asp-route-id="@Model.Order.OrderID" class="btn btn-primary">
+                            Upload New Design
+                        </a>
+                    }
+                    <a asp-controller="Order" asp-action="Details" asp-route-id="@Model.Order.OrderID" class="btn btn-secondary">
+                        Back to Order
+                    </a>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Order Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <p><strong>Customer:</strong><br>@Model.Order.Customer.FirstName @Model.Order.Customer.LastName</p>
+                        </div>
+                        <div class="col-md-3">
+                            <p><strong>Occasion:</strong><br>@Model.Order.Occasion</p>
+                        </div>
+                        <div class="col-md-3">
+                            <p><strong>Budget:</strong><br>$@Model.Order.Budget.ToString("F2")</p>
+                        </div>
+                        <div class="col-md-3">
+                            <p>
+                                <strong>Status:</strong><br>
+                                <span class="badge bg-@GetStatusBadgeColor(Model.Order.Status)">@Model.Order.Status</span>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <p>
+                                <strong>Items:</strong><br>
+                                @string.Join(", ", Model.Order.OrderItems.Select(i => $"{i.ItemName} (x{i.Quantity})"))
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @if (Model.Designs.Any())
+            {
+                <h4 class="mb-3">Submitted Designs (@Model.Designs.Count)</h4>
+
+                <div class="row">
+                    @foreach (var design in Model.Designs)
+                    {
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card h-100 shadow-sm">
+                                <img src="@design.ImagePath" class="card-img-top" alt="Design @design.DesignID"
+                                     style="height: 250px; object-fit: cover; cursor: pointer;"
+                                     onclick="showImageModal('@design.ImagePath', @design.DesignID)">
+
+                                <div class="card-body">
+                                    <h6 class="card-title">Design #@design.DesignID</h6>
+                                    <p class="card-text small">
+                                        <strong>Uploaded by:</strong> @design.EmployeeName<br>
+                                        <strong>Date:</strong> @design.UploadedAt.ToString("MM/dd/yyyy h:mm tt")<br>
+                                        <strong>Quantity:</strong> @design.ProposedQuantity<br>
+                                        <strong>Est. Cost:</strong> $@design.EstimatedCost.ToString("F2")
+                                    </p>
+
+                                    @if (!string.IsNullOrEmpty(design.DesignNotes))
+                                    {
+                                        <p class="card-text small">
+                                            <strong>Notes:</strong> @design.DesignNotes
+                                        </p>
+                                    }
+                                </div>
+
+                                @if (Model.CanApprove && Model.Order.Status == "Awaiting Customer Approval")
+                                {
+                                    <div class="card-footer">
+                                        <form asp-action="Approve" method="post" class="d-inline">
+                                            <input type="hidden" name="id" value="@design.DesignID" />
+                                            <input type="hidden" name="orderId" value="@Model.Order.OrderID" />
+                                            <button type="submit" class="btn btn-success btn-sm w-100 mb-2"
+                                                    onclick="return confirm('Are you sure you want to approve this design? This will move the order to In Process status.')">
+                                                Approve Design
+                                            </button>
+                                        </form>
+                                        <button type="button" class="btn btn-outline-danger btn-sm w-100"
+                                                onclick="showRejectModal(@design.DesignID, @Model.Order.OrderID)">
+                                            Reject
+                                        </button>
+                                    </div>
+                                }
+                                else if (design.IsApproved)
+                                {
+                                    <div class="card-footer bg-success text-white text-center">
+                                        Approved
+                                        @if (design.ApprovedAt.HasValue)
+                                        {
+                                            <br />
+                                            <small>
+                                                @if (!string.IsNullOrEmpty(design.ApprovedByCustomerName))
+                                                {
+                                                    <text>by @design.ApprovedByCustomerName</text>
+                                                }
+                                                on @design.ApprovedAt.Value.ToString("MM/dd/yyyy h:mm tt")
+                                            </small>
+                                        }
+                                    </div>
+                                }
+                                else if (Model.CanUpload && !design.IsApproved)
+                                {
+                                    @* Add delete button for employees if design not approved *@
+                                    <div class="card-footer">
+                                        <form asp-action="Delete" method="post" class="d-inline">
+                                            <input type="hidden" name="id" value="@design.DesignID" />
+                                            <input type="hidden" name="orderId" value="@Model.Order.OrderID" />
+                                            <button type="submit" class="btn btn-danger btn-sm w-100"
+                                                    onclick="return confirm('Are you sure you want to delete this design? This cannot be undone.')">
+                                                Delete Design
+                                            </button>
+                                        </form>
+                                    </div>
+                                }
+                                else if (design.IsApproved)
+                                {
+                                    <div class="card-footer bg-success text-white text-center">
+                                        Approved
+                                        @if (design.ApprovedAt.HasValue)
+                                        {
+                                            <br />
+                                            <small>
+                                                @if (!string.IsNullOrEmpty(design.ApprovedByCustomerName))
+                                                {
+                                                    <text>by @design.ApprovedByCustomerName</text>
+                                                }
+                                                on @design.ApprovedAt.Value.ToString("MM/dd/yyyy h:mm tt")
+                                            </small>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    No designs have been uploaded for this order yet.
+                    @if (Model.CanUpload)
+                    {
+                        <text>Click "Upload New Design" to add a proposal.</text>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="imageModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Design Preview</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="modalImage" src="" class="img-fluid" alt="Design">
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="rejectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Reject Design</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="rejectForm" asp-action="Reject" method="post">
+                <div class="modal-body">
+                    <input type="hidden" id="rejectDesignId" name="id" />
+                    <input type="hidden" id="rejectOrderId" name="orderId" />
+
+                    <div class="mb-3">
+                        <label for="rejectionReason" class="form-label">Reason for Rejection (Optional)</label>
+                        <textarea class="form-control" id="rejectionReason" name="rejectionReason"
+                                  rows="3" placeholder="Please provide feedback..."></textarea>
+                    </div>
+                    <p class="text-muted small">
+                        Rejecting this design will return the order to "Pending" status so a new design can be submitted.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Reject Design</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function showImageModal(imagePath, designId) {
+            document.getElementById('modalImage').src = imagePath;
+            new bootstrap.Modal(document.getElementById('imageModal')).show();
+        }
+
+        function showRejectModal(designId, orderId) {
+            document.getElementById('rejectDesignId').value = designId;
+            document.getElementById('rejectOrderId').value = orderId;
+            new bootstrap.Modal(document.getElementById('rejectModal')).show();
+        }
+    </script>
+}
+
+@functions {
+    string GetStatusBadgeColor(string status)
+    {
+        return status switch
+        {
+            "Pending" => "warning",
+            "Awaiting Customer Approval" => "info",
+            "In Process" => "primary",
+            "Ready" => "success",
+            "Picked Up" => "secondary",
+            _ => "dark"
+        };
+    }
+}
