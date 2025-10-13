@@ -12,11 +12,65 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/CISS411_GroupProject.styles.css" asp-append-version="true" />
 </head>
+<!-- Linda: Navigation & Background color -->
+    <style>
+        /* Plain light blue background */
+        body {
+            background-color: #e6f7ff;
+        }
+
+        /* Turquoise navbar styling */
+        .navbar {
+            background: linear-gradient(135deg, #40e0d0 0%, #20b2aa 100%) !important;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            font-weight: bold;
+            color: #008080 !important;
+            padding: 5px 0;
+        }
+
+        /* Nav item styling */
+        .nav-link {
+            color: ActiveBorder !important;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+            .nav-link:hover {
+                color: #006666 !important;
+            }
+
+        /* Button styling to match theme */
+        .btn-primary {
+            background: linear-gradient(135deg, #40e0d0 0%, #20b2aa 100%);
+            border: none;
+            border-radius: 6px;
+        }
+
+            .btn-primary:hover {
+                background: linear-gradient(135deg, #38d1c0 0%, #1ca096 100%);
+                transform: translateY(-1px);
+                box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            }
+    </style>
 <body>
     <header>
         <nav class="navbar navbar-expand-sm navbar-light bg-white border-bottom box-shadow mb-3">
             <div class="container-fluid">
-                <a class="navbar-brand" asp-controller="Home" asp-action="Index">CISS411_GroupProject</a>
+                <a class="navbar-brand" asp-controller="Home" asp-action="Index">
+                    <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">
+                        <div style="display: flex; align-items: center; background: white; padding: 5px 15px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 2px solid #40e0d0;">
+                            <div style="display: flex; flex-direction: column; line-height: 1.1;">
+                                <span style="font-weight: bold; color: steelblue; font-size: 22px;">Smith Sweets</span>
+                                <span style="font-weight: normal; color: coral; font-size: 14px; font-style: italic;">Artisan Bakery</span>
+                            </div>
+                        </div>
+                    </a>
+                </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
                         data-bs-target="#mainNav" aria-controls="mainNav"
                         aria-expanded="false" aria-label="Toggle navigation">
@@ -36,32 +90,18 @@
                             @if (User.Identity?.IsAuthenticated == true &&
                                                     (User.IsInRole("Customer") || User.IsInRole("Employee") || User.IsInRole("Admin")))
                             {
+                                <!-- Linda: 10-13-25 Removed dropdown since there's a button for creating orders -->
                                 <!-- Orders menu -->
-                                <li class="nav-item dropdown">
-                                    <a class="nav-link dropdown-toggle text-dark" href="#" role="button" data-bs-toggle="dropdown">
-                                        Orders
-                                    </a>
-                                    <ul class="dropdown-menu">
-                                        @* Customer-only *@
-                                        @if (User.IsInRole("Customer"))
-                                        {
-                                            <li>
-                                                <a class="dropdown-item" asp-controller="Order" asp-action="Create">Create Order</a>
-                                            </li>
-                                            <li>
-                                                <a class="dropdown-item" asp-controller="Order" asp-action="List" asp-route-filter="mine">My Orders</a>
-                                            </li>
-                                        }
+                                @if (User.IsInRole("Customer"))
+                                {
+                                    <a class="nav-link text-dark" asp-controller="Order" asp-action="List" asp-route-filter="mine">Orders</a>
+                                }
 
                                         @* Employee/Admin global list *@
                                         @if (User.IsInRole("Employee") || User.IsInRole("Admin"))
                                         {
-                                            <li>
-                                                <a class="dropdown-item" asp-controller="Order" asp-action="List">Order List</a>
-                                            </li>
+                                                <a class="nav-link text-dark" asp-controller="Order" asp-action="List">Orders</a>
                                         }
-                                    </ul>
-                                </li>
                             }
 
                             @* Admin/Employee tools *@

@@ -1,0 +1,65 @@
+﻿<!--
+//  Group 3 - Agile Minds: Linda Daniel, Jason Farr, Brenden Hoffman, Justin Kim, 
+//	Allan Lopezsandoval, Ashley Steward, Juan Rodriguez, Jerome Whitaker
+//  CISS 411 Software Architecture wASP.NET MVC
+//  Team Project: Smith Sweet Shop
+//  Linda: 10-13-25
+-->
+
+@model CISS411_GroupProject.Models.Feedback
+@using Microsoft.AspNetCore.Identity
+@inject UserManager<IdentityUser> UserManager
+
+@{
+    ViewData["Title"] = "Leave Feedback";
+    var identityUserId = UserManager.GetUserId(User);
+    var currentUserId = (int?)ViewData["CurrentUserId"];
+
+    // Check if feedback already exists for this order and user
+    var existingFeedback = Model.Order?.Feedbacks?.FirstOrDefault(f => f.CustomerID == currentUserId && !string.IsNullOrEmpty(f.FeedbackText));
+}
+
+@if (existingFeedback != null)
+{
+    <div class="container mt-4">
+        <div class="alert alert-info">
+            <h4>Feedback Previously Submitted</h4>
+            <p>You have already submitted feedback for this order. You can view your feedback in the order details.</p>
+            <a asp-action="Details" asp-controller="Order" asp-route-id="@Model.OrderID" class="btn btn-primary">
+                View Order Details
+            </a>
+        </div>
+    </div>
+}
+else
+{
+    <div class="container mt-4">
+        <h2>Rate Your Order</h2>
+        <form asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="OrderID" />
+
+            <div class="mb-3">
+                <label asp-for="Rating" class="form-label">Rating (1 to 5)</label>
+                <select asp-for="Rating" class="form-select">
+                    <option value="">-- Select --</option>
+                    <option value="1">1 - Poor</option>
+                    <option value="2">2 - Fair</option>
+                    <option value="3">3 - Good</option>
+                    <option value="4">4 - Very Good</option>
+                    <option value="5">5 - Excellent</option>
+                </select>
+                <span asp-validation-for="Rating" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="FeedbackText" class="form-label">Feedback Text</label>
+                <textarea asp-for="FeedbackText" class="form-control" rows="4"></textarea>
+                <span asp-validation-for="FeedbackText" class="text-danger"></span>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Submit Feedback</button>
+            <a asp-action="List" asp-controller="Order" class="btn btn-secondary">Back to Orders</a>
+        </form>
+    </div>
+}

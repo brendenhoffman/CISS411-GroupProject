@@ -1,10 +1,8 @@
 ﻿@*
 Course #: CISS 411
 Course Name: Software Architecture with ASP.NET with MVC
-
 Group 3: Ashley Steward, Linda Daniel, Allan Lopesandovall, Brenden Hoffman, 
 Jason Farr, Jerome Whitaker, Jason Farr and Justin Kim.
-
 Date Completed: 10-2-2025
 Story Assignee: Ashley Steward 
 Story: User Story 2
@@ -135,6 +133,25 @@ Story: User Story 2
                                        class="btn btn-outline-info" title="View/Manage Designs">
                                         <i class="bi bi-palette"></i>
                                     </a>
+                                    <!-- Linda: Customer feedback -->
+                                    @if (User.IsInRole("Customer") && order.Status == "Picked Up")
+                                    {
+                                        var hasFeedback = order.Feedbacks?.Any(f => !string.IsNullOrEmpty(f.FeedbackText)) == true;
+
+                                        if (hasFeedback)
+                                        {
+                                            <span class="btn btn-outline-success disabled" style="cursor: default;">
+                                                <i class="bi bi-check-circle"></i> Feedback Received
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <a asp-controller="Feedback" asp-action="Create" asp-route-orderId="@order.OrderID"
+                                            class="btn btn-outline-primary">
+                                                Leave Feedback
+                                            </a>
+                                        }
+                                    }
                                     @if ((User.IsInRole("Employee") || User.IsInRole("Admin")) && order.Status == "Pending")
                                     {
                                         <a asp-controller="Designs" asp-action="Upload" asp-route-id="@order.OrderID"
