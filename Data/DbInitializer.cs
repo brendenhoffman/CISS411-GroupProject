@@ -86,7 +86,7 @@ namespace CISS411_GroupProject.Data
                 "Alice", "Johnson", "456 Oak Ave", "555-1001");
 
             var bob = await EnsureUserAsync("bob@test.com", "Passw0rd!", "Customer",
-                "Bob", "Willizaams", "789 Pine Rd", "555-1002");
+                "Bob", "Williams", "789 Pine Rd", "555-1002");
 
             var carol = await EnsureUserAsync("carol@test.com", "Passw0rd!", "Employee",
                 "Carol", "Davis", "321 Elm St", "555-2001");
@@ -129,7 +129,7 @@ namespace CISS411_GroupProject.Data
                     {
                         new OrderItem { OrderID = orders[0].OrderID, ItemName = "Chocolate Cake",  Quantity = 1,  DesignApproved = false },
                         new OrderItem { OrderID = orders[1].OrderID, ItemName = "Cupcake Box",     Quantity = 12, DesignApproved = false },
-                        new OrderItem { OrderID = orders[2].OrderID, ItemName = "Graduation Cookies", Quantity = 24, DesignApproved = true }
+                        new OrderItem { OrderID = orders[2].OrderID, ItemName = "Iced Sugar Cookies", Quantity = 24, DesignApproved = true }
                     };
                     context.OrderItems.AddRange(items);
                     await context.SaveChangesAsync();

@@ -165,16 +165,26 @@ namespace CISS411_GroupProject.Controllers
         [Authorize(Roles = "Admin,Employee,Customer")]
         public async Task<IActionResult> Details(int id)
         {
-            var order = await _context.Orders
+			// Linda: Inject userManager for Feedback
+			var identityUserId = _userManager.GetUserId(User);
+			var appUser = await _context.AppUsers
+				.FirstOrDefaultAsync(u => u.IdentityUserId == identityUserId);
+
+			var order = await _context.Orders
                 .Include(o => o.Customer)
                 .Include(o => o.OrderItems)
                 .Include(o => o.Designs)
-                .FirstOrDefaultAsync(o => o.OrderID == id);
+				// Linda: Include feedbacks
+				.Include(o => o.Feedbacks) 
+				.FirstOrDefaultAsync(o => o.OrderID == id);
 
             if (order == null) return NotFound();
 
-            // Customers can only view their own orders
-            if (User.IsInRole("Customer"))
+			// Pass current customer id to view
+			ViewData["CurrentUserId"] = appUser?.UserID;
+            
+			// Customers can only view their own orders
+			if (User.IsInRole("Customer"))
             {
                 var userId = await GetLoggedInUserIdAsync();
                 if (order.CustomerID != userId) return Forbid();
