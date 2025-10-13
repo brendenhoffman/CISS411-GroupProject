@@ -1,5 +1,6 @@
 ﻿# Build
 Run Update-Database
+Run Drop-Database if there are any errors with Update-Database
 
 # Pages and Roles
 | **Page / Route**                                           | **Controller / View**                      | **Purpose**                                                                | **Who Can Access**                                      |

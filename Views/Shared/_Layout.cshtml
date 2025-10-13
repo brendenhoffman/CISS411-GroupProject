@@ -8,6 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - CISS411_GroupProject</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/CISS411_GroupProject.styles.css" asp-append-version="true" />
 </head>
@@ -32,43 +33,45 @@
                         @if (SignInManager.IsSignedIn(User))
                         {
                             <!-- Orders menu -->
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle text-dark" href="#" role="button" data-bs-toggle="dropdown">
-                                    Orders
-                                </a>
-                                <ul class="dropdown-menu">
-                                    @* Customer-only *@
-                                    @if (User.IsInRole("Customer"))
-                                    {
-                                        <li>
-                                            <a class="dropdown-item" asp-controller="Order" asp-action="Create">Create Order</a>
-                                        </li>
-                                        <li>
-                                            <a class="dropdown-item" asp-controller="Order" asp-action="List" asp-route-filter="mine">My Orders</a>
-                                        </li>
-                                        <li><hr class="dropdown-divider" /></li>
-                                    }
-                                    @* Employee/Admin global list *@
-                                    @if (User.IsInRole("Employee") || User.IsInRole("Admin"))
-                                    {
-                                        <li>
-                                            <a class="dropdown-item" asp-controller="Order" asp-action="List">Order List</a>
-                                        </li>
-                                    }
-                                </ul>
-                            </li>
-
-                            @* Admin/Employee tools *@
-                            @if (User.IsInRole("Admin") || User.IsInRole("Employee"))
+                            @if (User.Identity?.IsAuthenticated == true &&
+                                                    (User.IsInRole("Customer") || User.IsInRole("Employee") || User.IsInRole("Admin")))
                             {
-                                <li class="nav-item">
-                                    <a class="nav-link text-dark" asp-controller="Users" asp-action="List">Visitors</a>
+                                <!-- Orders menu -->
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle text-dark" href="#" role="button" data-bs-toggle="dropdown">
+                                        Orders
+                                    </a>
+                                    <ul class="dropdown-menu">
+                                        @* Customer-only *@
+                                        @if (User.IsInRole("Customer"))
+                                        {
+                                            <li>
+                                                <a class="dropdown-item" asp-controller="Order" asp-action="Create">Create Order</a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item" asp-controller="Order" asp-action="List" asp-route-filter="mine">My Orders</a>
+                                            </li>
+                                        }
+
+                                        @* Employee/Admin global list *@
+                                        @if (User.IsInRole("Employee") || User.IsInRole("Admin"))
+                                        {
+                                            <li>
+                                                <a class="dropdown-item" asp-controller="Order" asp-action="List">Order List</a>
+                                            </li>
+                                        }
+                                    </ul>
                                 </li>
                             }
+
+                            @* Admin/Employee tools *@
                             @if (User.IsInRole("Admin"))
                             {
                                 <li class="nav-item">
                                     <a class="nav-link text-dark" asp-controller="AdminUsers" asp-action="Index">Manage Roles</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-controller="Users" asp-action="List">Visitors</a>
                                 </li>
                             }
                         }

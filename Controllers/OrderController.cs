@@ -168,6 +168,7 @@ namespace CISS411_GroupProject.Controllers
             var order = await _context.Orders
                 .Include(o => o.Customer)
                 .Include(o => o.OrderItems)
+                .Include(o => o.Designs)
                 .FirstOrDefaultAsync(o => o.OrderID == id);
 
             if (order == null) return NotFound();
