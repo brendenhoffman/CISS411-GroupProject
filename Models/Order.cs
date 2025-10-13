@@ -18,8 +18,11 @@ namespace CISS411_GroupProject.Models
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
 
-        // Nav
-        public User? Customer { get; set; } = null!;
+		// Linda: 10-13-25 For custom design orders
+		public string? CustomDescription { get; set; }
+
+		// Nav
+		public User? Customer { get; set; } = null!;
         public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
         public ICollection<Design> Designs { get; set; } = new List<Design>();
         public ICollection<EmployeeAssignment> EmployeeAssignments { get; set; } = new List<EmployeeAssignment>();
