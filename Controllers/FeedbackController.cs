@@ -103,7 +103,7 @@ namespace CISS411_GroupProject.Controllers
 			_context.Feedbacks.Add(feedback);
 			await _context.SaveChangesAsync();
 
-			TempData["SuccessMessage"] = "Thank you for your feedback.";
+			TempData["SuccessMessage"] = "Thank you for your feedback. Grandma Smith will read it personally.";
 			return RedirectToAction("Details", "Order", new { id = feedback.OrderID });
 		}
 	}
