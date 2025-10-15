@@ -34,7 +34,6 @@ Story: User Story 2
         </div>
     }
 
-    <!-- Filter -->
     <div class="card mb-3">
         <div class="card-body">
             <form method="get" asp-action="List" class="row g-3 align-items-center">
@@ -94,15 +93,13 @@ Story: User Story 2
                                                           <td>@order.Occasion</td>
                                                           <td>@order.DeliveryDate.ToShortDateString()</td>
                                                           <td>@(order.Budget.HasValue ? $"${order.Budget.Value:F2}" : "—")</td>
-
-                            <!-- Status -->
-                            <td>
-                                <span class="badge
-                                        @(order.Status == "Pending" ? "bg-warning text-dark"
-                                                                          : order.Status == "Awaiting Customer Approval" ? "bg-info"
-                                                                          : order.Status == "In Process" ? "bg-primary"
-                                                                          : order.Status == "Ready" ? "bg-success"
-                                                                          : "bg-secondary")">
+                                                          <td>
+                                                              <span class="badge
+                                            @(order.Status == "Pending" ? "bg-warning text-dark"
+                                                                              : order.Status == "Awaiting Customer Approval" ? "bg-info"
+                                                                              : order.Status == "In Process" ? "bg-primary"
+                                                                              : order.Status == "Ready" ? "bg-success"
+                                                                              : "bg-secondary")">
                             @order.Status
                         </span>
 
@@ -121,8 +118,6 @@ Story: User Story 2
                                     </small>
                                 }
                             </td>
-
-                            <!-- Actions -->
                             <td>
                                 <div class="btn-group btn-group-sm" role="group">
                                     <a asp-action="Details" asp-route-id="@order.OrderID"
@@ -133,7 +128,17 @@ Story: User Story 2
                                        class="btn btn-outline-info" title="View/Manage Designs">
                                         <i class="bi bi-palette"></i>
                                     </a>
-                                    <!-- Linda: Customer feedback -->
+                                    @if (User.IsInRole("Admin") || User.IsInRole("Employee"))
+                                    {
+                                        var hasFeedback = order.Feedbacks?.Any(f => !string.IsNullOrEmpty(f.FeedbackText)) == true;
+                                        if (hasFeedback)
+                                        {
+                                            <a asp-action="Feedback" asp-route-id="@order.OrderID"
+                                               class="btn btn-outline-success" title="View Feedback">
+                                                <i class="bi bi-chat-left-text"></i>
+                                            </a>
+                                        }
+                                    }
                                     @if (User.IsInRole("Customer") && order.Status == "Picked Up")
                                     {
                                         var hasFeedback = order.Feedbacks?.Any(f => !string.IsNullOrEmpty(f.FeedbackText)) == true;
@@ -147,7 +152,7 @@ Story: User Story 2
                                         else
                                         {
                                             <a asp-controller="Feedback" asp-action="Create" asp-route-orderId="@order.OrderID"
-                                            class="btn btn-outline-primary">
+                                               class="btn btn-outline-primary">
                                                 Leave Feedback
                                             </a>
                                         }
@@ -161,8 +166,6 @@ Story: User Story 2
                                     }
                                 </div>
                             </td>
-
-                            <!-- Update Status -->
                             @if (User.IsInRole("Employee") || User.IsInRole("Admin"))
                             {
                                 <td>
