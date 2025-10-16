@@ -223,6 +223,40 @@ namespace CISS411_GroupProject.Controllers
             TempData["SuccessMessage"] = $"Order status updated to {status}.";
             return RedirectToAction(nameof(Details), new { id });
         }
+        // POST: /Order/MarkReady
+        [HttpPost]
+        [Authorize(Roles = "Employee,Admin")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> MarkReady(int id)
+        {
+            var order = await _context.Orders
+                .Include(o => o.Customer)
+                .FirstOrDefaultAsync(o => o.OrderID == id);
+
+            if (order == null)
+                return NotFound();
+
+            // Update order status and timestamp
+            order.Status = "Ready";
+            order.ReadyAt = DateTime.Now;
+            order.UpdatedAt = DateTime.Now;
+
+            // Create notification for customer
+            var notification = new Notification
+            {
+                CustomerID = order.CustomerID,
+                Message = $"Your order #{order.OrderID} is ready for pickup!",
+                CreatedAt = DateTime.Now
+            };
+
+            _context.Notifications.Add(notification);
+            _context.Update(order);
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = $"Order #{order.OrderID} marked as Ready for Pickup.";
+            return RedirectToAction(nameof(Details), new { id = order.OrderID });
+        }
+
 
         [Authorize(Roles = "Admin,Employee")]
         public async Task<IActionResult> Feedback(int id)

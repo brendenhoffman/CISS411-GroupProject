@@ -33,6 +33,18 @@ Story: User Story 2
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     }
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    }
+
+    @if (User.IsInRole("Customer") && Model.Any(o => o.Status == "Ready"))
+    {
+        <div class="alert alert-info">
+            One or more of your orders are ready for pickup!
+        </div>
+    }
+
 
     <div class="card mb-3">
         <div class="card-body">
