@@ -21,8 +21,12 @@ namespace CISS411_GroupProject.Models
 		// Linda: 10-13-25 For custom design orders
 		public string? CustomDescription { get; set; }
 
-		// Nav
-		public User? Customer { get; set; } = null!;
+        //Timestamp for when order is ready
+        public DateTime? ReadyAt { get; set; }
+
+
+        // Nav
+        public User? Customer { get; set; } = null!;
         public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
         public ICollection<Design> Designs { get; set; } = new List<Design>();
         public ICollection<EmployeeAssignment> EmployeeAssignments { get; set; } = new List<EmployeeAssignment>();

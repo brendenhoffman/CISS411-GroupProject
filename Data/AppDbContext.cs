@@ -17,6 +17,8 @@ namespace CISS411_GroupProject.Data
         public DbSet<Feedback> Feedbacks => Set<Feedback>();
         public DbSet<EmployeeAssignment> EmployeeAssignments => Set<EmployeeAssignment>();
         public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+        public DbSet<Notification> Notifications { get; set; }
+
 
         protected override void OnModelCreating(ModelBuilder b)
         {
