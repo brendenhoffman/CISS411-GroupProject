@@ -37,7 +37,7 @@ Story: User Story 2
     {
         <div class="alert alert-success">@TempData["SuccessMessage"]</div>
     }
-
+    <!--A.S. (For the customer's notification to see their product is ready.)-->
     @if (User.IsInRole("Customer") && Model.Any(o => o.Status == "Ready"))
     {
         <div class="alert alert-info">

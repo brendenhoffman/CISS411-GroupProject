@@ -21,7 +21,7 @@ namespace CISS411_GroupProject.Models
 		// Linda: 10-13-25 For custom design orders
 		public string? CustomDescription { get; set; }
 
-        //Timestamp for when order is ready
+        //A.S.: Timestamp for when order is ready
         public DateTime? ReadyAt { get; set; }
 
 

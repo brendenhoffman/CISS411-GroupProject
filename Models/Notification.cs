@@ -11,7 +11,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace CISS411_GroupProject.Models
 {
-    //Created for User
+    //Created for customers to receive "ready message". 
     public class Notification
     {
         [Key]

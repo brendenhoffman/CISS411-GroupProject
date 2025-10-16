@@ -236,7 +236,8 @@ namespace CISS411_GroupProject.Controllers
             TempData["SuccessMessage"] = $"Order status updated to {status}.";
             return RedirectToAction(nameof(Details), new { id });
         }
-        // POST: /Order/MarkReady
+
+        //Ashley Steward: (Order/Mark Ready) To mark the order as ready.
         [HttpPost]
         [Authorize(Roles = "Employee,Admin")]
         [ValidateAntiForgeryToken]
