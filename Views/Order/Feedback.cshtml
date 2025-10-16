@@ -1,0 +1,107 @@
+﻿@model CISS411_GroupProject.Models.Order
+
+@{
+    ViewData["Title"] = "Order Feedback";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Customer Feedback for Order #@Model.OrderID</h2>
+        <a asp-action="Details" asp-route-id="@Model.OrderID" class="btn btn-secondary">
+            Back to Order Details
+        </a>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">Order Summary</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <p><strong>Customer:</strong> @Model.Customer.FirstName @Model.Customer.LastName</p>
+                    <p><strong>Email:</strong> @Model.Customer.Email</p>
+                </div>
+                <div class="col-md-4">
+                    <p><strong>Occasion:</strong> @Model.Occasion</p>
+                    <p><strong>Delivery Date:</strong> @Model.DeliveryDate.ToString("MM/dd/yyyy")</p>
+                </div>
+                <div class="col-md-4">
+                    <p>
+                        <strong>Budget:</strong>
+                        @(Model.Budget.HasValue ? $"${Model.Budget.Value:F2}" : "—")
+                    </p>
+                    <p>
+                        <strong>Status:</strong>
+                        <span class="badge bg-@(Model.Status == "Pending" ? "warning" :
+                                                                    Model.Status == "Awaiting Customer Approval" ? "info" :
+                                                                    Model.Status == "In Process" ? "primary" :
+                                                                    Model.Status == "Ready" ? "success" : "secondary")">
+                            @Model.Status
+                        </span>
+                    </p>
+                </div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-12">
+                    <p>
+                        <strong>Items:</strong>
+                        @string.Join(", ", Model.OrderItems.Select(i => $"{i.ItemName} (x{i.Quantity})"))
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.Feedbacks != null && Model.Feedbacks.Any())
+    {
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Customer Feedback (@Model.Feedbacks.Count)</h5>
+            </div>
+            <div class="card-body">
+                @foreach (var feedback in Model.Feedbacks.OrderByDescending(f => f.CreatedAt))
+                {
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <h6 class="mb-1">@feedback.Customer.FirstName @feedback.Customer.LastName</h6>
+                                    <small class="text-muted">@feedback.CreatedAt.ToString("MM/dd/yyyy h:mm tt")</small>
+                                </div>
+                                @if (feedback.Rating.HasValue)
+                                {
+                                    <div>
+                                        <span class="badge bg-warning text-dark">
+                                            @for (int i = 1; i <= 5; i++)
+                                            {
+                                                if (i <= feedback.Rating.Value)
+                                                {
+                                                    <span>★</span>
+                                                }
+                                                else
+                                                {
+                                                    <span>☆</span>
+                                                }
+                                            }
+                                            (@feedback.Rating.Value/5)
+                                        </span>
+                                    </div>
+                                }
+                            </div>
+                            <div class="mt-2">
+                                <p class="mb-0">@feedback.FeedbackText</p>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> No customer feedback has been submitted for this order yet.
+        </div>
+    }
+</div>
