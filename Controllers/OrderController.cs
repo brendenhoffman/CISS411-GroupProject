@@ -31,7 +31,6 @@ namespace CISS411_GroupProject.Controllers
             _userManager = userManager;
         }
 
-        // GET: /Order/Create
         [Authorize(Roles = "Customer")]
         public async Task<IActionResult> Create()
         {
@@ -40,14 +39,13 @@ namespace CISS411_GroupProject.Controllers
             var model = new OrderFormViewModel
             {
                 OrderInput = new Order { DeliveryDate = DateTime.Today.AddDays(1) },
-                Items = new List<OrderItem>(), // start empty; the view lets user add rows
+                Items = new List<OrderItem>(),
                 AvailableItems = availableItems
             };
 
             return View(model);
         }
 
-        // POST: /Order/Create
         [HttpPost]
         [Authorize(Roles = "Customer")]
         [ValidateAntiForgeryToken]
@@ -61,16 +59,14 @@ namespace CISS411_GroupProject.Controllers
                     Console.WriteLine($"MODELSTATE: {kvp.Key} => {string.Join("; ", errors.Select(e => e.ErrorMessage))}");
                 }
             }
-            // Ensure collections exist when re-rendering the view
+
             model.Items ??= new List<OrderItem>();
 
-            // These aren’t posted from the form; we’ll set them server-side
-            ModelState.Remove("OrderInput");             // top-level complex property not posted as a single value
-            ModelState.Remove("OrderInput.Customer");    // navigation prop
-            ModelState.Remove("OrderInput.CustomerID");  // FK
-            ModelState.Remove("OrderInput.OrderID");     // identity key, not posted
+            ModelState.Remove("OrderInput");
+            ModelState.Remove("OrderInput.Customer");
+            ModelState.Remove("OrderInput.CustomerID");
+            ModelState.Remove("OrderInput.OrderID");
 
-            // Bind logged-in user to the order BEFORE validation
             var userId = await GetLoggedInUserIdAsync();
             if (userId == 0)
             {
@@ -81,12 +77,10 @@ namespace CISS411_GroupProject.Controllers
                 model.OrderInput.CustomerID = userId;
             }
 
-            // Trim away blank items
             model.Items = model.Items
                 .Where(i => !string.IsNullOrWhiteSpace(i.ItemName) && i.Quantity > 0)
                 .ToList();
 
-            // Per-item validation
             for (int i = 0; i < model.Items.Count; i++)
             {
                 var item = model.Items[i];
@@ -98,11 +92,10 @@ namespace CISS411_GroupProject.Controllers
 
                 if (item.ItemName != "Custom Design")
                 {
-                    item.CustomDescription = null; // don’t carry a desc for standard items
+                    item.CustomDescription = null;
                 }
             }
 
-            // Require at least one item
             if (!model.Items.Any())
             {
                 ModelState.AddModelError(string.Empty, "Please add at least one item to your order.");
@@ -128,7 +121,7 @@ namespace CISS411_GroupProject.Controllers
                 model.OrderInput.CreatedAt = DateTime.Now;
 
                 _context.Orders.Add(model.OrderInput);
-                await _context.SaveChangesAsync(); // get OrderID
+                await _context.SaveChangesAsync();
 
                 foreach (var item in model.Items)
                 {
@@ -136,11 +129,11 @@ namespace CISS411_GroupProject.Controllers
 
                     if (item.ItemName == "Custom Design")
                     {
-                        item.DesignApproved = false; // requires approval
+                        item.DesignApproved = false;
                     }
                     else
                     {
-                        item.DesignApproved = true;  // standard items auto-approved
+                        item.DesignApproved = true;
                         item.CustomDescription = null;
                     }
 
@@ -154,37 +147,32 @@ namespace CISS411_GroupProject.Controllers
             }
             catch (Exception ex)
             {
-                // You can log ex here
                 ModelState.AddModelError(string.Empty, "An error occurred while processing your order. Please try again.");
                 model.AvailableItems = await GetAvailableItemsAsync();
                 return View(model);
             }
         }
 
-        // GET: /Order/Details/{id}
         [Authorize(Roles = "Admin,Employee,Customer")]
         public async Task<IActionResult> Details(int id)
         {
-			// Linda: Inject userManager for Feedback
-			var identityUserId = _userManager.GetUserId(User);
-			var appUser = await _context.AppUsers
-				.FirstOrDefaultAsync(u => u.IdentityUserId == identityUserId);
+            var identityUserId = _userManager.GetUserId(User);
+            var appUser = await _context.AppUsers
+                .FirstOrDefaultAsync(u => u.IdentityUserId == identityUserId);
 
-			var order = await _context.Orders
+            var order = await _context.Orders
                 .Include(o => o.Customer)
                 .Include(o => o.OrderItems)
                 .Include(o => o.Designs)
-				// Linda: Include feedbacks
-				.Include(o => o.Feedbacks) 
-				.FirstOrDefaultAsync(o => o.OrderID == id);
+                .Include(o => o.Feedbacks)
+                    .ThenInclude(f => f.Customer)
+                .FirstOrDefaultAsync(o => o.OrderID == id);
 
             if (order == null) return NotFound();
 
-			// Pass current customer id to view
-			ViewData["CurrentUserId"] = appUser?.UserID;
-            
-			// Customers can only view their own orders
-			if (User.IsInRole("Customer"))
+            ViewData["CurrentUserId"] = appUser?.UserID;
+
+            if (User.IsInRole("Customer"))
             {
                 var userId = await GetLoggedInUserIdAsync();
                 if (order.CustomerID != userId) return Forbid();
@@ -193,13 +181,13 @@ namespace CISS411_GroupProject.Controllers
             return View(order);
         }
 
-        // GET: /Order/List
         [Authorize(Roles = "Admin,Employee,Customer")]
         public async Task<IActionResult> List(string? status = null)
         {
             var q = _context.Orders
                 .Include(o => o.Customer)
                 .Include(o => o.OrderItems)
+                .Include(o => o.Feedbacks)
                 .AsQueryable();
 
             if (User.IsInRole("Customer"))
@@ -219,7 +207,6 @@ namespace CISS411_GroupProject.Controllers
             return View(orders);
         }
 
-        // POST: /Order/UpdateStatus
         [HttpPost]
         [Authorize(Roles = "Admin,Employee")]
         [ValidateAntiForgeryToken]
@@ -272,7 +259,24 @@ namespace CISS411_GroupProject.Controllers
         }
 
 
-        // Helper: Get available items from existing OrderItems
+        [Authorize(Roles = "Admin,Employee")]
+        public async Task<IActionResult> Feedback(int id)
+        {
+            var order = await _context.Orders
+                .Include(o => o.Customer)
+                .Include(o => o.OrderItems)
+                .Include(o => o.Feedbacks)
+                    .ThenInclude(f => f.Customer)
+                .FirstOrDefaultAsync(o => o.OrderID == id);
+
+            if (order == null)
+            {
+                return NotFound();
+            }
+
+            return View(order);
+        }
+
         private async Task<List<SelectListItem>> GetAvailableItemsAsync()
         {
             return await _context.OrderItems
@@ -284,7 +288,6 @@ namespace CISS411_GroupProject.Controllers
                 .ToListAsync();
         }
 
-        // Helper: Get logged-in AppUser ID from Identity
         private async Task<int> GetLoggedInUserIdAsync()
         {
             var identityUserId = _userManager.GetUserId(User);
