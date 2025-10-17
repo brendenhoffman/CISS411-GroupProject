@@ -332,9 +332,12 @@ Story Assignee: Ashley Steward
     </div>
     <br />
 
+    <!-- Linda: 10-17-25 Feedback customers view only / Added wrap for customer role -->
+    @if (User.IsInRole("Customer"))
+    {
     <div class="card flex-grow-2" style="border-color:deepskyblue; color:#007bff; min-width:300px;">
         <div class="card-header" style="background-color:cornflowerblue; color:white;">
-            Submitted Feedback
+            Your Feedback
         </div>
         <div class="card-body">
             @if (existingFeedback != null && !string.IsNullOrEmpty(existingFeedback.FeedbackText))
@@ -351,4 +354,5 @@ Story Assignee: Ashley Steward
             }
         </div>
     </div>
+    }
 </div>
