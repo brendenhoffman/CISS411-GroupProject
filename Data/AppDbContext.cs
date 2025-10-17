@@ -64,6 +64,9 @@ namespace CISS411_GroupProject.Data
                 e.Property(x => x.CreatedAt).HasDefaultValueSql("GETDATE()");
                 e.Property(x => x.UpdatedAt).IsRequired(false);
 
+                // Linda: 10-16-25 map for pickedup orders
+                e.Property(x => x.PickedUpAt).IsRequired(false);
+
                 e.HasOne(x => x.Customer)
                   .WithMany(u => u.Orders)
                   .HasForeignKey(x => x.CustomerID)

@@ -210,21 +210,35 @@ namespace CISS411_GroupProject.Controllers
         [HttpPost]
         [Authorize(Roles = "Admin,Employee")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> UpdateStatus(int id, string status)
-        {
-            var order = await _context.Orders.FindAsync(id);
-            if (order == null) return NotFound();
+		public async Task<IActionResult> UpdateStatus(int id, string status)
+		{
+			var order = await _context.Orders.FindAsync(id);
+			if (order == null) return NotFound();
 
-            order.Status = status;
-            order.UpdatedAt = DateTime.Now;
-            _context.Update(order);
-            await _context.SaveChangesAsync();
+			order.Status = status;
+			order.UpdatedAt = DateTime.Now;
 
-            TempData["SuccessMessage"] = $"Order status updated to {status}.";
-            return RedirectToAction(nameof(Details), new { id });
-        }
-        // POST: /Order/MarkReady
-        [HttpPost]
+			// Linda: 10-17-25 Set PickedUpAt only when status is "Picked Up"
+			if (status == "Picked Up")
+			{
+				order.PickedUpAt = DateTime.Now;
+			}
+
+			// Linda: 10-17-25 Set ReadyAt only when status is "Ready"
+			if (status == "Ready")
+			{
+				order.ReadyAt = DateTime.Now;
+			}
+
+			_context.Update(order);
+			await _context.SaveChangesAsync();
+
+			TempData["SuccessMessage"] = $"Order status updated to {status}.";
+			return RedirectToAction(nameof(Details), new { id });
+		}
+
+		// POST: /Order/MarkReady
+		[HttpPost]
         [Authorize(Roles = "Employee,Admin")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> MarkReady(int id)
@@ -256,9 +270,8 @@ namespace CISS411_GroupProject.Controllers
             TempData["SuccessMessage"] = $"Order #{order.OrderID} marked as Ready for Pickup.";
             return RedirectToAction(nameof(Details), new { id = order.OrderID });
         }
-
-
-        [Authorize(Roles = "Admin,Employee")]
+		
+		[Authorize(Roles = "Admin,Employee")]
         public async Task<IActionResult> Feedback(int id)
         {
             var order = await _context.Orders
