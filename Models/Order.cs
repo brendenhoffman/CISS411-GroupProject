@@ -24,6 +24,9 @@ namespace CISS411_GroupProject.Models
         //Timestamp for when order is ready
         public DateTime? ReadyAt { get; set; }
 
+        // Linda: 10-16-25 Timestamp for pickedup orders
+        public DateTime? PickedUpAt { get; set; }
+
 
         // Nav
         public User? Customer { get; set; } = null!;

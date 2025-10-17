@@ -57,6 +57,11 @@ Story Assignee: Ashley Steward
                               Model.Status == "Ready" ? "bg-success" : "bg-secondary")">
                             @Model.Status
                         </span>
+                        <!-- Linda: 10-17-25 Display picked up timestamp -->
+                        @if (Model.PickedUpAt.HasValue)
+                        {
+                        <p><strong>Picked Up:</strong> @Model.PickedUpAt.Value.ToString("g")</p>
+                    }
                     </p>
                     <p><strong>Created:</strong> @Model.CreatedAt.ToString("g")</p>
                 </div>
@@ -290,7 +295,8 @@ Story Assignee: Ashley Steward
     <!-- A.S. Created for employee timestamp. -->
     @if (User.IsInRole("Employee") || User.IsInRole("Admin"))
     {
-        if (Model.Status != "Ready")
+         <!-- Linda: 10-17-25 Updated to hide button on picked up status -->
+        if (Model.Status != "Ready" && Model.Status != "Picked Up")
         {
             <form asp-action="MarkReady" asp-route-id="@Model.OrderID" method="post" class="mt-3">
                 <button type="submit" class="btn btn-success">
@@ -326,6 +332,9 @@ Story Assignee: Ashley Steward
     </div>
     <br />
 
+    <!-- Linda: 10-17-25 Feedback customers view only / Added wrap for customer role -->
+    @if (User.IsInRole("Customer"))
+    {
     <div class="card flex-grow-2" style="border-color:deepskyblue; color:#007bff; min-width:300px;">
         <div class="card-header" style="background-color:cornflowerblue; color:white;">
             Your Feedback
@@ -345,4 +354,5 @@ Story Assignee: Ashley Steward
             }
         </div>
     </div>
+    }
 </div>
